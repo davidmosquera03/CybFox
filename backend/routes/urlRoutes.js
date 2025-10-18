@@ -47,8 +47,8 @@ async function checkUrlReputation(targetUrl, strictness = 0) {
   }
 }
 
-// --- Express Route: /check-ipqs ---
 router.get("/check-ipqs", async (req, res) => {
+  // #swagger.tags = ['URLs']
   // 1. Get the URL and strictness from query parameters
   const targetUrl = req.query.url;
   const strictness = req.query.strictness; // String, will be parsed in the function
@@ -83,7 +83,9 @@ router.get("/check-ipqs", async (req, res) => {
   }
 });
 
+// #swagger.tags = ['URLs']
 router.get("/check-crt", async (req, res) => {
+  // #swagger.tags = ['URLs']
   const targetDomain = req.query.url;
 
   if (!targetDomain) {
@@ -134,6 +136,7 @@ router.get("/check-crt", async (req, res) => {
 });
 
 router.get("/check-vt", async (req, res) => {
+  // #swagger.tags = ['URLs']
   try {
     const { url } = req.query;
 
@@ -196,7 +199,9 @@ router.get("/check-vt", async (req, res) => {
   }
 });
 
+// #swagger.tags = ['URLs']
 router.get("/check-google/:url", async (req, res) => {
+  // #swagger.tags = ['URLs']
   try {
     const urlToCheck = decodeURIComponent(req.params.url);
 

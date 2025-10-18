@@ -16,6 +16,9 @@ npm i
 node server.js
 ```
 
+Si se hacen alteraciones a rutas
+$ node swagger.js && node server.js
+
 En Chrome ir a "chrome://extensions/"
 
 Hacer clic en "load unpacked"

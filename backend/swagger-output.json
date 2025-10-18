@@ -7,12 +7,25 @@
   },
   "host": "localhost:3000",
   "basePath": "/",
+  "tags": [
+    {
+      "name": "Tests",
+      "description": "Test endpoints"
+    },
+    {
+      "name": "URLs",
+      "description": "URL analysis endpoints"
+    }
+  ],
   "schemes": [
     "http"
   ],
   "paths": {
     "/api/test": {
       "get": {
+        "tags": [
+          "Tests"
+        ],
         "description": "",
         "responses": {
           "200": {
@@ -23,6 +36,9 @@
     },
     "/api/invert-url": {
       "get": {
+        "tags": [
+          "Tests"
+        ],
         "description": "",
         "parameters": [
           {
@@ -43,6 +59,9 @@
     },
     "/api/check-ipqs": {
       "get": {
+        "tags": [
+          "URLs"
+        ],
         "description": "",
         "parameters": [
           {
@@ -74,6 +93,9 @@
     },
     "/api/check-crt": {
       "get": {
+        "tags": [
+          "URLs"
+        ],
         "description": "",
         "parameters": [
           {
@@ -103,6 +125,9 @@
     },
     "/api/check-vt": {
       "get": {
+        "tags": [
+          "URLs"
+        ],
         "description": "",
         "parameters": [
           {
@@ -126,6 +151,9 @@
     },
     "/api/check-google/{url}": {
       "get": {
+        "tags": [
+          "URLs"
+        ],
         "description": "",
         "parameters": [
           {
