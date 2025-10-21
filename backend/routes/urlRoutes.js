@@ -49,6 +49,7 @@ async function checkUrlReputation(targetUrl, strictness = 0) {
 
 router.get("/check-ipqs", async (req, res) => {
   // #swagger.tags = ['URLs']
+  // #swagger.description = 'Uses IPQS API for safety info '
   // 1. Get the URL and strictness from query parameters
   const targetUrl = req.query.url;
   const strictness = req.query.strictness; // String, will be parsed in the function
@@ -83,60 +84,9 @@ router.get("/check-ipqs", async (req, res) => {
   }
 });
 
-// #swagger.tags = ['URLs']
-router.get("/check-crt", async (req, res) => {
-  // #swagger.tags = ['URLs']
-  const targetDomain = req.query.url;
-
-  if (!targetDomain) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "Missing 'url' query parameter. Usage: /check-crt?url=example.com",
-    });
-  }
-
-  console.log(`Fetching certificate data for: ${targetDomain}`);
-
-  try {
-    // crt.sh JSON output endpoint
-    const resp = await fetch(
-      `https://crt.sh/?q=${encodeURIComponent(targetDomain)}&output=json`
-    );
-
-    if (!resp.ok) {
-      return res.status(502).json({
-        success: false,
-        message: `crt.sh returned status ${resp.status}`,
-      });
-    }
-
-    const data = await resp.json();
-
-    if (data.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No certificates found for this domain.",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      count: data.length,
-      certificates: data.slice(0, 5), // optional: limit results
-    });
-  } catch (err) {
-    console.error("Error fetching from crt.sh:", err);
-    res.status(500).json({
-      success: false,
-      message: "Error querying crt.sh",
-      error: err.message,
-    });
-  }
-});
-
 router.get("/check-vt", async (req, res) => {
   // #swagger.tags = ['URLs']
+  // #swagger.description = 'Uses Virus Total Api to see safety info '
   try {
     const { url } = req.query;
 
@@ -202,6 +152,7 @@ router.get("/check-vt", async (req, res) => {
 // #swagger.tags = ['URLs']
 router.get("/check-google/:url", async (req, res) => {
   // #swagger.tags = ['URLs']
+  // #swagger.description = 'Uses Google Safe Browsing API to see if page is safe '
   try {
     const urlToCheck = decodeURIComponent(req.params.url);
 
@@ -265,6 +216,85 @@ router.get("/check-google/:url", async (req, res) => {
     res.status(500).json({
       error: "Error al verificar la URL",
       message: error.message,
+    });
+  }
+});
+
+const tls = require("tls");
+
+router.get("/check-crt", async (req, res) => {
+  // #swagger.tags = ['URLs']
+  // #swagger.description = 'Returns certificate info '
+  const { domain } = req.query;
+  if (!domain)
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing ?domain=" });
+
+  try {
+    const result = await new Promise((resolve) => {
+      try {
+        const parsed = new URL(
+          domain.includes("://") ? domain : `https://${domain}`
+        );
+        const hostname = parsed.hostname;
+
+        const options = {
+          host: hostname,
+          port: 443,
+          method: "GET",
+          servername: hostname,
+        };
+
+        const tlsSocket = tls.connect(options, () => {
+          const cert = tlsSocket.getPeerCertificate(true);
+
+          if (!cert || !Object.keys(cert).length) {
+            resolve({
+              success: false,
+              message: "No certificate found (possibly HTTP only).",
+            });
+            tlsSocket.end();
+            return;
+          }
+
+          const domainMatch =
+            (cert.subject?.CN && cert.subject.CN.includes(hostname)) ||
+            (cert.subjectaltname && cert.subjectaltname.includes(hostname));
+
+          resolve({
+            success: true,
+            https: true,
+            domain: hostname,
+            valid_from: cert.valid_from,
+            valid_to: cert.valid_to,
+            issuer: cert.issuer ? cert.issuer.O : "Unknown",
+            domain_match: !!domainMatch,
+          });
+
+          tlsSocket.end();
+        });
+
+        tlsSocket.on("error", (err) => {
+          resolve({
+            success: false,
+            message: `Connection error or no HTTPS: ${err.message}`,
+          });
+        });
+      } catch (err) {
+        resolve({
+          success: false,
+          message: `Invalid domain or request error: ${err.message}`,
+        });
+      }
+    });
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Internal error",
+      error: error.message,
     });
   }
 });
