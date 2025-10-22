@@ -76,3 +76,23 @@ document.getElementById("invertUrlBtn").addEventListener("click", () => {
     }
   });
 });
+
+// Invert current URL
+document.getElementById("getIPQS").addEventListener("click", () => {
+  chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+    try {
+      const currentUrl = tabs[0].url;
+
+      // Encode the URL as a query parameter
+      const encodedUrl = encodeURIComponent(currentUrl);
+      const result = await makeApiCall(`/check-ipqs?url=${encodedUrl}`, "GET");
+
+      displayResult(
+        `Unsafe: ${result.unsafe}\n Risk_score: ${result.risk_score}`,
+        "success"
+      );
+    } catch (error) {
+      // Error already handled in makeApiCall
+    }
+  });
+});
