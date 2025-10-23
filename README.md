@@ -10,14 +10,21 @@ Extension web para brindar seguridad a la navegación en linea de manera pedagog
 
 ## Ejecución
 
+### Backend
+
 ```
 cd backend
 npm i
 node server.js
 ```
 
-Si se hacen alteraciones a rutas
-$ node swagger.js && node server.js
+Si se hacen alteraciones a rutas:
+
+```
+node swagger.js && node server.js
+```
+
+### Extension
 
 En Chrome ir a "chrome://extensions/"
 

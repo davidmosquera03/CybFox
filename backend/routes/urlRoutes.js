@@ -1,8 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-
 const qs = require("qs");
+const tls = require("tls");
+const { formatIPQSResponse } = require("../utils/formatters");
+const { extractDomain } = require("../utils/helpers");
+const Page = require("../models/Page");
+// API KEYS
 const IPQS_API_KEY = process.env.IPQS_KEY;
 const VT_API_KEY = process.env.VT_KEY;
 const GOOGLE_KEY = process.env.GOOGLE_KEY;
@@ -20,7 +24,7 @@ async function checkUrlReputation(targetUrl, strictness = 0) {
     0,
     Math.min(2, parseInt(strictness, 10) || 0)
   );
-  const encodedUrl = encodeURIComponent(targetUrl); // ✅ correct encoding
+  const encodedUrl = encodeURIComponent(targetUrl);
 
   const apiUrl = `https://ipqualityscore.com/api/json/url/${IPQS_API_KEY}/${encodedUrl}`;
 
@@ -50,8 +54,10 @@ async function checkUrlReputation(targetUrl, strictness = 0) {
 router.get("/check-ipqs", async (req, res) => {
   // #swagger.tags = ['URLs']
   // #swagger.description = 'Uses IPQS API for safety info '
+
   // 1. Get the URL and strictness from query parameters
   const targetUrl = req.query.url;
+  const domain = extractDomain(targetUrl);
   const strictness = req.query.strictness; // String, will be parsed in the function
 
   if (!targetUrl) {
@@ -71,7 +77,26 @@ router.get("/check-ipqs", async (req, res) => {
   // 3. Handle the response and return appropriate status codes
   if (result.success === true) {
     // Successful response from IPQS
-    res.status(200).json(result);
+    const formatted = formatIPQSResponse(result);
+
+    const page = await Page.findOne({ url: domain });
+
+    if (page) {
+      // Remove old IPQS report
+      page.reports = page.reports.filter((r) => r.source !== "IPQS");
+      page.reports.push({ source: "IPQS", date: new Date(), data: formatted });
+      page.currentScore = formatted.risk_score;
+      await page.save();
+    } else {
+      // Create new
+      await Page.create({
+        url: domain,
+        currentScore: formatted.risk_score,
+        reports: [{ source: "IPQS", date: new Date(), data: formatted }],
+      });
+    }
+
+    res.status(200).json(formatted);
   } else if (
     result.message &&
     result.message.includes("API Key is not configured")
@@ -155,8 +180,8 @@ router.get("/check-google/:url", async (req, res) => {
   // #swagger.description = 'Uses Google Safe Browsing API to see if page is safe '
   try {
     const urlToCheck = decodeURIComponent(req.params.url);
+    const domain = extractDomain(urlToCheck); // Fixed variable name
 
-    // Validación básica de URL
     if (!urlToCheck || urlToCheck.trim() === "") {
       return res.status(400).json({ error: "URL es requerida" });
     }
@@ -188,7 +213,6 @@ router.get("/check-google/:url", async (req, res) => {
       }
     );
 
-    // Manejo de errores de la API
     if (!response.ok) {
       const errorData = await response.json();
       return res.status(response.status).json({
@@ -199,18 +223,31 @@ router.get("/check-google/:url", async (req, res) => {
 
     const data = await response.json();
 
-    if (data.matches && data.matches.length > 0) {
-      res.json({
-        safe: false,
-        threats: data.matches,
-        url: urlToCheck,
+    // Format response
+    const formatted = {
+      safe: !data.matches || data.matches.length === 0,
+      threats: data.matches || [],
+    };
+
+    // Save to DB
+    const page = await Page.findOne({ url: domain });
+
+    if (page) {
+      page.reports = page.reports.filter((r) => r.source !== "Google");
+      page.reports.push({
+        source: "Google",
+        date: new Date(),
+        data: formatted,
       });
+      await page.save();
     } else {
-      res.json({
-        safe: true,
-        url: urlToCheck,
+      await Page.create({
+        url: domain,
+        reports: [{ source: "Google", date: new Date(), data: formatted }],
       });
     }
+
+    res.json(formatted);
   } catch (error) {
     console.error("Error checking URL:", error);
     res.status(500).json({
@@ -219,8 +256,6 @@ router.get("/check-google/:url", async (req, res) => {
     });
   }
 });
-
-const tls = require("tls");
 
 router.get("/check-crt", async (req, res) => {
   // #swagger.tags = ['URLs']
@@ -298,5 +333,70 @@ router.get("/check-crt", async (req, res) => {
     });
   }
 });
+
+//check blacklist
+router.get("/check-blacklist/:url", async (req, res) => {
+  // #swagger.tags = ['URLs']
+  // #swagger.description = 'returns whether a page has been blacklisted '
+  const url = decodeURIComponent(req.params.url);
+  const domain = extractDomain(url);
+
+  if (!domain) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid URL",
+    });
+  }
+
+  const page = await Page.findOne({ url: domain });
+
+  if (!page) {
+    return res.json({
+      success: true,
+      isBlacklisted: false,
+      inDatabase: false,
+      message: "Page not scanned yet",
+    });
+  }
+
+  res.json({
+    success: true,
+    isBlacklisted: page.isBlacklisted || false,
+    currentScore: page.currentScore,
+    inDatabase: true,
+  });
+});
+
+// toggle backlist
+router.post("/toggle-blacklist", async (req, res) => {
+  // #swagger.tags = ['URLs']
+  // #swagger.description = 'toggles the blacklist status of a page in DB '
+  const { url } = req.body;
+  const domain = extractDomain(url);
+
+  if (!domain) {
+    return res.status(400).json({ success: false, message: "Invalid URL" });
+  }
+
+  const page = await Page.findOne({ url: domain });
+
+  if (!page) {
+    // Create new with blacklist: true
+    await Page.create({
+      url: domain,
+      isBlacklisted: true,
+      blacklistedAt: new Date(),
+    });
+    return res.json({ success: true, isBlacklisted: true });
+  }
+
+  // Toggle existing
+  page.isBlacklisted = !page.isBlacklisted;
+  page.blacklistedAt = page.isBlacklisted ? new Date() : null;
+  await page.save();
+
+  res.json({ success: true, isBlacklisted: page.isBlacklisted });
+});
+//
 
 module.exports = router;

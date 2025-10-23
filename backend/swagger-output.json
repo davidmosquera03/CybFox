@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "My Express API",
-    "description": "Auto-generated API documentation",
+    "title": "CybFox",
+    "description": "Security extension backend",
     "version": "1.0.0"
   },
   "host": "localhost:3000",
@@ -166,6 +166,60 @@
           },
           "500": {
             "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/check-blacklist/{url}": {
+      "get": {
+        "tags": [
+          "URLs"
+        ],
+        "description": "returns whether a page has been blacklisted ",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/toggle-blacklist": {
+      "post": {
+        "tags": [
+          "URLs"
+        ],
+        "description": "toggles the blacklist status of a page in DB ",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
           }
         }
       }

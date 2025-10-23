@@ -2,8 +2,8 @@ const swaggerAutogen = require("swagger-autogen")();
 
 const doc = {
   info: {
-    title: "My Express API",
-    description: "Auto-generated API documentation",
+    title: "CybFox",
+    description: "Security extension backend",
     version: "1.0.0",
   },
   tags: [
