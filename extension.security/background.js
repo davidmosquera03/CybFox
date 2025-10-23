@@ -1,14 +1,23 @@
-// replace with verifying domain in blacklist
-const blockedUrls = ["example.com", "badsite.com"];
-
-chrome.webNavigation.onBeforeNavigate.addListener((details) => {
+chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   if (details.frameId === 0) {
-    // Main frame only
     const url = new URL(details.url);
-    if (blockedUrls.some((blocked) => url.hostname.includes(blocked))) {
-      chrome.tabs.update(details.tabId, {
-        url: chrome.runtime.getURL("blocked.html"), // Redirect to warning page
-      });
+    const domain = url.hostname;
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/check-blacklist/${encodeURIComponent(
+          domain
+        )}`
+      );
+      const data = await response.json();
+
+      if (data.isBlacklisted) {
+        chrome.tabs.update(details.tabId, {
+          url: chrome.runtime.getURL("blocked.html"),
+        });
+      }
+    } catch (error) {
+      console.error("Error checking blacklist:", error);
     }
   }
 });
