@@ -2,9 +2,12 @@
   "manifest_version": 3,
   "name": "URL Safety Checker",
   "version": "1.0",
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "webNavigation", "tabs"],
   "host_permissions": ["http://localhost:3000/*"],
   "action": {
     "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   }
 }
