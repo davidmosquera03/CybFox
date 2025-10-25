@@ -129,6 +129,8 @@ router.get("/check-vt", async (req, res) => {
       });
     }
 
+    const domain = extractDomain(url);
+
     // Step 1: Submit the URL for analysis
     const encodedUrl = qs.stringify({ url });
     const submitResponse = await axios.post(
@@ -143,23 +145,56 @@ router.get("/check-vt", async (req, res) => {
       }
     );
 
-    // Step 2: Retrieve the analysis ID
     const analysisId = submitResponse.data.data.id;
 
-    // Step 3: Query the analysis result
-    const analysisResponse = await axios.get(
-      `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
-      {
-        headers: {
-          accept: "application/json",
-          "x-apikey": VT_API_KEY,
-        },
+    // Step 2: Poll until analysis completes
+    let analysisResponse;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (attempts < maxAttempts) {
+      analysisResponse = await axios.get(
+        `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
+        {
+          headers: {
+            accept: "application/json",
+            "x-apikey": VT_API_KEY,
+          },
+        }
+      );
+
+      if (analysisResponse.data.data.attributes.status === "completed") {
+        break;
       }
-    );
+
+      // Wait 3 seconds before retry
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      attempts++;
+    }
+
+    const stats = analysisResponse.data.data.attributes.stats;
+
+    // Save to DB
+    const page = await Page.findOne({ url: domain });
+
+    if (page) {
+      page.reports = page.reports.filter((r) => r.source !== "VirusTotal");
+      page.reports.push({
+        source: "VirusTotal",
+        date: new Date(),
+        data: stats,
+      });
+      await page.save();
+    } else {
+      await Page.create({
+        url: domain,
+        reports: [{ source: "VirusTotal", date: new Date(), data: stats }],
+      });
+    }
 
     res.status(200).json({
       success: true,
-      analysis: analysisResponse.data,
+      stats: stats,
     });
   } catch (error) {
     console.error(
@@ -260,6 +295,7 @@ router.get("/check-google/:url", async (req, res) => {
 router.get("/check-crt", async (req, res) => {
   // #swagger.tags = ['URLs']
   // #swagger.description = 'Returns certificate info '
+
   const { domain } = req.query;
   if (!domain)
     return res
@@ -324,6 +360,23 @@ router.get("/check-crt", async (req, res) => {
       }
     });
 
+    // Save to DB if successful
+    if (result.success) {
+      const domainName = extractDomain(domain);
+      const page = await Page.findOne({ url: domainName });
+
+      if (page) {
+        page.reports = page.reports.filter((r) => r.source !== "CRT");
+        page.reports.push({ source: "CRT", date: new Date(), data: result });
+        await page.save();
+      } else {
+        await Page.create({
+          url: domainName,
+          reports: [{ source: "CRT", date: new Date(), data: result }],
+        });
+      }
+    }
+
     res.json(result);
   } catch (error) {
     res.status(500).json({
@@ -364,6 +417,21 @@ router.get("/check-blacklist/:url", async (req, res) => {
     isBlacklisted: page.isBlacklisted || false,
     currentScore: page.currentScore,
     inDatabase: true,
+  });
+});
+
+router.get("/get-backlist", async (req, res) => {
+  // #swagger.tags = ['URLs']
+  // #swagger.description = 'returns all backlisted pages '
+  const blacklisted = await Page.find({ isBlacklisted: true });
+  res.json({
+    success: true,
+    count: blacklisted.length,
+    blacklist: blacklisted.map((page) => ({
+      url: page.url,
+      blacklistedAt: page.blacklistedAt,
+      currentScore: page.currentScore,
+    })),
   });
 });
 

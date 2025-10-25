@@ -194,6 +194,19 @@
         }
       }
     },
+    "/api/get-backlist": {
+      "get": {
+        "tags": [
+          "URLs"
+        ],
+        "description": "returns all backlisted pages ",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/toggle-blacklist": {
       "post": {
         "tags": [
