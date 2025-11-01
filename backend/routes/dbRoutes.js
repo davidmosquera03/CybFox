@@ -206,12 +206,102 @@ router.get("/get-page/:url", async (req, res) => {
     success: true,
     page: {
       url: page.url,
+      lastScanned: page.lastScanned,
       currentScore: page.currentScore,
       isBlacklisted: page.isBlacklisted,
+      isWhitelisted: page.isWhitelisted,
       tags: page.tags,
       reports: page.reports,
     },
   });
+});
+
+// WHITELIST
+router.get("/check-whitelist/:url", async (req, res) => {
+  // #swagger.tags = ['Database']
+  // #swagger.description = 'Returns whether a page has been whitelisted'
+  const url = decodeURIComponent(req.params.url);
+  const domain = extractDomain(url);
+
+  if (!domain) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid URL",
+    });
+  }
+
+  const page = await Page.findOne({ url: domain });
+
+  if (!page) {
+    return res.json({
+      success: true,
+      isWhitelisted: false,
+      inDatabase: false,
+      message: "Page not scanned yet",
+    });
+  }
+
+  res.json({
+    success: true,
+    isWhitelisted: page.isWhitelisted || false,
+    currentScore: page.currentScore,
+    inDatabase: true,
+  });
+});
+
+// Get all whitelisted pages
+router.get("/get-whitelist", async (req, res) => {
+  // #swagger.tags = ['Database']
+  // #swagger.description = 'Returns all whitelisted pages'
+  const whitelisted = await Page.find({ isWhitelisted: true });
+  res.json({
+    success: true,
+    count: whitelisted.length,
+    whitelist: whitelisted.map((page) => ({
+      url: page.url,
+      whitelistedAt: page.whitelistedAt,
+      currentScore: page.currentScore,
+      tags: page.tags,
+    })),
+  });
+});
+
+// Toggle whitelist status
+router.post("/toggle-whitelist", async (req, res) => {
+  // #swagger.tags = ['Database']
+  // #swagger.description = 'Toggles the whitelist status of a page'
+  const { url } = req.body;
+  const domain = extractDomain(url);
+
+  if (!domain) {
+    return res.status(400).json({ success: false, message: "Invalid URL" });
+  }
+
+  const page = await Page.findOne({ url: domain });
+
+  if (!page) {
+    await Page.create({
+      url: domain,
+      isWhitelisted: true,
+      whitelistedAt: new Date(),
+    });
+    return res.json({ success: true, isWhitelisted: true });
+  }
+
+  // Check if blacklisted
+  if (page.isBlacklisted) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Cannot whitelist a blacklisted page. Remove from blacklist first.",
+    });
+  }
+
+  page.isWhitelisted = !page.isWhitelisted;
+  page.whitelistedAt = page.isWhitelisted ? new Date() : null;
+  await page.save();
+
+  res.json({ success: true, isWhitelisted: page.isWhitelisted });
 });
 
 module.exports = router;

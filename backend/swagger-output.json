@@ -197,6 +197,73 @@
         }
       }
     },
+    "/api/db/check-whitelist/{url}": {
+      "get": {
+        "tags": [
+          "Database"
+        ],
+        "description": "Returns whether a page has been whitelisted",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/db/get-whitelist": {
+      "get": {
+        "tags": [
+          "Database"
+        ],
+        "description": "Returns all whitelisted pages",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/db/toggle-whitelist": {
+      "post": {
+        "tags": [
+          "Database"
+        ],
+        "description": "Toggles the whitelist status of a page",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
     "/api/test": {
       "get": {
         "tags": [

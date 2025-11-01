@@ -88,6 +88,7 @@ router.get("/check-ipqs", async (req, res) => {
       page.reports = page.reports.filter((r) => r.source !== "IPQS");
       page.reports.push({ source: "IPQS", date: new Date(), data: formatted });
       page.currentScore = formatted.risk_score;
+      page.lastScanned = new Date();
       await page.save();
     } else {
       // Create new
@@ -95,6 +96,7 @@ router.get("/check-ipqs", async (req, res) => {
         url: domain,
         currentScore: formatted.risk_score,
         reports: [{ source: "IPQS", date: new Date(), data: formatted }],
+        lastScanned: new Date(),
       });
     }
 
@@ -186,11 +188,13 @@ router.get("/check-vt", async (req, res) => {
         date: new Date(),
         data: stats,
       });
+      page.lastScanned = new Date();
       await page.save();
     } else {
       await Page.create({
         url: domain,
         reports: [{ source: "VirusTotal", date: new Date(), data: stats }],
+        lastScanned: new Date(),
       });
     }
 
@@ -276,11 +280,13 @@ router.get("/check-google/:url", async (req, res) => {
         date: new Date(),
         data: formatted,
       });
+      page.lastScanned = new Date();
       await page.save();
     } else {
       await Page.create({
         url: domain,
         reports: [{ source: "Google", date: new Date(), data: formatted }],
+        lastScanned: new Date(),
       });
     }
 
@@ -370,11 +376,13 @@ router.get("/check-crt", async (req, res) => {
       if (page) {
         page.reports = page.reports.filter((r) => r.source !== "CRT");
         page.reports.push({ source: "CRT", date: new Date(), data: result });
+        page.lastScanned = new Date();
         await page.save();
       } else {
         await Page.create({
           url: domainName,
           reports: [{ source: "CRT", date: new Date(), data: result }],
+          lastScanned: new Date(),
         });
       }
     }
