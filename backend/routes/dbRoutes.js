@@ -1,0 +1,217 @@
+const express = require("express");
+const router = express.Router();
+const { extractDomain } = require("../utils/helpers");
+const Page = require("../models/Page");
+
+// Check if page is blacklisted
+router.get("/check-blacklist/:url", async (req, res) => {
+  // #swagger.tags = ['Database']
+  // #swagger.description = 'Returns whether a page has been blacklisted'
+  const url = decodeURIComponent(req.params.url);
+  const domain = extractDomain(url);
+
+  if (!domain) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid URL",
+    });
+  }
+
+  const page = await Page.findOne({ url: domain });
+
+  if (!page) {
+    return res.json({
+      success: true,
+      isBlacklisted: false,
+      inDatabase: false,
+      message: "Page not scanned yet",
+    });
+  }
+
+  res.json({
+    success: true,
+    isBlacklisted: page.isBlacklisted || false,
+    currentScore: page.currentScore,
+    inDatabase: true,
+  });
+});
+
+// Get all blacklisted pages
+router.get("/get-blacklist", async (req, res) => {
+  // #swagger.tags = ['Database']
+  // #swagger.description = 'Returns all blacklisted pages'
+  const blacklisted = await Page.find({ isBlacklisted: true });
+  res.json({
+    success: true,
+    count: blacklisted.length,
+    blacklist: blacklisted.map((page) => ({
+      url: page.url,
+      blacklistedAt: page.blacklistedAt,
+      currentScore: page.currentScore,
+      tags: page.tags,
+    })),
+  });
+});
+
+// Toggle blacklist status
+router.post("/toggle-blacklist", async (req, res) => {
+  // #swagger.tags = ['Database']
+  // #swagger.description = 'Toggles the blacklist status of a page'
+  const { url } = req.body;
+  const domain = extractDomain(url);
+
+  if (!domain) {
+    return res.status(400).json({ success: false, message: "Invalid URL" });
+  }
+
+  const page = await Page.findOne({ url: domain });
+
+  if (!page) {
+    await Page.create({
+      url: domain,
+      isBlacklisted: true,
+      blacklistedAt: new Date(),
+    });
+    return res.json({ success: true, isBlacklisted: true });
+  }
+
+  page.isBlacklisted = !page.isBlacklisted;
+  page.blacklistedAt = page.isBlacklisted ? new Date() : null;
+  await page.save();
+
+  res.json({ success: true, isBlacklisted: page.isBlacklisted });
+});
+
+// Add tags to page
+router.post("/add-tag", async (req, res) => {
+  // #swagger.tags = ['Database']
+  // #swagger.description = 'Adds tags to a page'
+  const { url, tags } = req.body;
+
+  if (!url || !tags || !Array.isArray(tags)) {
+    return res.status(400).json({
+      success: false,
+      message: "url and tags array required",
+    });
+  }
+
+  const validTags = [
+    "phishing",
+    "malware",
+    "publicidades intrusivas",
+    "desinformación",
+  ];
+  const invalidTags = tags.filter((t) => !validTags.includes(t));
+
+  if (invalidTags.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid tags: ${invalidTags.join(", ")}`,
+      validTags,
+    });
+  }
+
+  const domain = extractDomain(url);
+  if (!domain) {
+    return res.status(400).json({ success: false, message: "Invalid URL" });
+  }
+
+  const page = await Page.findOne({ url: domain });
+
+  if (page) {
+    page.tags = [...new Set([...page.tags, ...tags])];
+    await page.save();
+  } else {
+    await Page.create({
+      url: domain,
+      tags: tags,
+      reports: [],
+    });
+  }
+
+  res.json({ success: true, domain, tagsAdded: tags });
+});
+
+// Remove tags from page
+router.post("/remove-tag", async (req, res) => {
+  // #swagger.tags = ['Database']
+  // #swagger.description = 'Removes tags from a page'
+  const { url, tags } = req.body;
+
+  if (!url || !tags || !Array.isArray(tags)) {
+    return res.status(400).json({
+      success: false,
+      message: "url and tags array required",
+    });
+  }
+
+  const domain = extractDomain(url);
+  if (!domain) {
+    return res.status(400).json({ success: false, message: "Invalid URL" });
+  }
+
+  const page = await Page.findOne({ url: domain });
+
+  if (!page) {
+    return res.status(404).json({
+      success: false,
+      message: "Page not found in database",
+    });
+  }
+
+  page.tags = page.tags.filter((t) => !tags.includes(t));
+  await page.save();
+
+  res.json({
+    success: true,
+    domain,
+    tagsRemoved: tags,
+    remainingTags: page.tags,
+  });
+});
+
+// Get all pages with domains and scores
+router.get("/get-all-pages", async (req, res) => {
+  // #swagger.tags = ['Database']
+  // #swagger.description = 'Returns all pages with domain and score'
+  const pages = await Page.find({}, { url: 1, currentScore: 1, _id: 0 });
+  res.json({
+    success: true,
+    count: pages.length,
+    pages: pages,
+  });
+});
+
+// Get single page info
+router.get("/get-page/:url", async (req, res) => {
+  // #swagger.tags = ['Database']
+  // #swagger.description = 'Returns single page info'
+  const url = decodeURIComponent(req.params.url);
+  const domain = extractDomain(url);
+
+  if (!domain) {
+    return res.status(400).json({ success: false, message: "Invalid URL" });
+  }
+
+  const page = await Page.findOne({ url: domain });
+
+  if (!page) {
+    return res.status(404).json({
+      success: false,
+      message: "Page not found",
+    });
+  }
+
+  res.json({
+    success: true,
+    page: {
+      url: page.url,
+      currentScore: page.currentScore,
+      isBlacklisted: page.isBlacklisted,
+      tags: page.tags,
+      reports: page.reports,
+    },
+  });
+});
+
+module.exports = router;

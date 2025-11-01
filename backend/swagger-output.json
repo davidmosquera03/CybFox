@@ -21,6 +21,182 @@
     "http"
   ],
   "paths": {
+    "/api/db/check-blacklist/{url}": {
+      "get": {
+        "tags": [
+          "Database"
+        ],
+        "description": "Returns whether a page has been blacklisted",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/db/get-blacklist": {
+      "get": {
+        "tags": [
+          "Database"
+        ],
+        "description": "Returns all blacklisted pages",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/db/toggle-blacklist": {
+      "post": {
+        "tags": [
+          "Database"
+        ],
+        "description": "Toggles the blacklist status of a page",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/db/add-tag": {
+      "post": {
+        "tags": [
+          "Database"
+        ],
+        "description": "Adds tags to a page",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "example": "any"
+                },
+                "tags": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/db/remove-tag": {
+      "post": {
+        "tags": [
+          "Database"
+        ],
+        "description": "Removes tags from a page",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "example": "any"
+                },
+                "tags": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/db/get-all-pages": {
+      "get": {
+        "tags": [
+          "Database"
+        ],
+        "description": "Returns all pages with domain and score",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/db/get-page/{url}": {
+      "get": {
+        "tags": [
+          "Database"
+        ],
+        "description": "Returns single page info",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api/test": {
       "get": {
         "tags": [
@@ -166,73 +342,6 @@
           },
           "500": {
             "description": "Internal Server Error"
-          }
-        }
-      }
-    },
-    "/api/check-blacklist/{url}": {
-      "get": {
-        "tags": [
-          "URLs"
-        ],
-        "description": "returns whether a page has been blacklisted ",
-        "parameters": [
-          {
-            "name": "url",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/api/get-backlist": {
-      "get": {
-        "tags": [
-          "URLs"
-        ],
-        "description": "returns all backlisted pages ",
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/toggle-blacklist": {
-      "post": {
-        "tags": [
-          "URLs"
-        ],
-        "description": "toggles the blacklist status of a page in DB ",
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "url": {
-                  "example": "any"
-                }
-              }
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
           }
         }
       }

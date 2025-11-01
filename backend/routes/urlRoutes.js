@@ -3,9 +3,11 @@ const router = express.Router();
 const axios = require("axios");
 const qs = require("qs");
 const tls = require("tls");
+
 const { formatIPQSResponse } = require("../utils/formatters");
 const { extractDomain } = require("../utils/helpers");
 const Page = require("../models/Page");
+
 // API KEYS
 const IPQS_API_KEY = process.env.IPQS_KEY;
 const VT_API_KEY = process.env.VT_KEY;
@@ -386,85 +388,5 @@ router.get("/check-crt", async (req, res) => {
     });
   }
 });
-
-//check blacklist
-router.get("/check-blacklist/:url", async (req, res) => {
-  // #swagger.tags = ['URLs']
-  // #swagger.description = 'returns whether a page has been blacklisted '
-  const url = decodeURIComponent(req.params.url);
-  const domain = extractDomain(url);
-
-  if (!domain) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid URL",
-    });
-  }
-
-  const page = await Page.findOne({ url: domain });
-
-  if (!page) {
-    return res.json({
-      success: true,
-      isBlacklisted: false,
-      inDatabase: false,
-      message: "Page not scanned yet",
-    });
-  }
-
-  res.json({
-    success: true,
-    isBlacklisted: page.isBlacklisted || false,
-    currentScore: page.currentScore,
-    inDatabase: true,
-  });
-});
-
-router.get("/get-backlist", async (req, res) => {
-  // #swagger.tags = ['URLs']
-  // #swagger.description = 'returns all backlisted pages '
-  const blacklisted = await Page.find({ isBlacklisted: true });
-  res.json({
-    success: true,
-    count: blacklisted.length,
-    blacklist: blacklisted.map((page) => ({
-      url: page.url,
-      blacklistedAt: page.blacklistedAt,
-      currentScore: page.currentScore,
-    })),
-  });
-});
-
-// toggle backlist
-router.post("/toggle-blacklist", async (req, res) => {
-  // #swagger.tags = ['URLs']
-  // #swagger.description = 'toggles the blacklist status of a page in DB '
-  const { url } = req.body;
-  const domain = extractDomain(url);
-
-  if (!domain) {
-    return res.status(400).json({ success: false, message: "Invalid URL" });
-  }
-
-  const page = await Page.findOne({ url: domain });
-
-  if (!page) {
-    // Create new with blacklist: true
-    await Page.create({
-      url: domain,
-      isBlacklisted: true,
-      blacklistedAt: new Date(),
-    });
-    return res.json({ success: true, isBlacklisted: true });
-  }
-
-  // Toggle existing
-  page.isBlacklisted = !page.isBlacklisted;
-  page.blacklistedAt = page.isBlacklisted ? new Date() : null;
-  await page.save();
-
-  res.json({ success: true, isBlacklisted: page.isBlacklisted });
-});
-//
 
 module.exports = router;

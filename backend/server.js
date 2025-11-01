@@ -16,7 +16,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const testRoutes = require("./routes/testRoutes");
 const urlRoutes = require("./routes/urlRoutes");
+const dbRoutes = require("./routes/dbRoutes");
 
+app.use("/api/db", dbRoutes);
 app.use("/api", [testRoutes, urlRoutes]);
 
 const swaggerFile = require("./swagger-output.json");
