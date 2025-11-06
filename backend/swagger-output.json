@@ -360,33 +360,6 @@
         }
       }
     },
-    "/api/check-google/{url}": {
-      "get": {
-        "tags": [
-          "URLs"
-        ],
-        "description": "Uses Google Safe Browsing API to see if page is safe ",
-        "parameters": [
-          {
-            "name": "url",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
     "/api/check-crt": {
       "get": {
         "tags": [

@@ -87,14 +87,12 @@ router.get("/check-ipqs", async (req, res) => {
       // Remove old IPQS report
       page.reports = page.reports.filter((r) => r.source !== "IPQS");
       page.reports.push({ source: "IPQS", date: new Date(), data: formatted });
-      page.currentScore = formatted.risk_score;
       page.lastScanned = new Date();
       await page.save();
     } else {
       // Create new
       await Page.create({
         url: domain,
-        currentScore: formatted.risk_score,
         reports: [{ source: "IPQS", date: new Date(), data: formatted }],
         lastScanned: new Date(),
       });
@@ -211,91 +209,6 @@ router.get("/check-vt", async (req, res) => {
       success: false,
       message: "Failed to retrieve VirusTotal analysis.",
       error: error.response?.data || error.message,
-    });
-  }
-});
-
-// #swagger.tags = ['URLs']
-router.get("/check-google/:url", async (req, res) => {
-  // #swagger.tags = ['URLs']
-  // #swagger.description = 'Uses Google Safe Browsing API to see if page is safe '
-  try {
-    const urlToCheck = decodeURIComponent(req.params.url);
-    const domain = extractDomain(urlToCheck); // Fixed variable name
-
-    if (!urlToCheck || urlToCheck.trim() === "") {
-      return res.status(400).json({ error: "URL es requerida" });
-    }
-
-    const body = {
-      client: {
-        clientId: "myapp",
-        clientVersion: "1.0",
-      },
-      threatInfo: {
-        threatTypes: [
-          "MALWARE",
-          "SOCIAL_ENGINEERING",
-          "UNWANTED_SOFTWARE",
-          "POTENTIALLY_HARMFUL_APPLICATION",
-        ],
-        platformTypes: ["ANY_PLATFORM"],
-        threatEntryTypes: ["URL"],
-        threatEntries: [{ url: urlToCheck }],
-      },
-    };
-
-    const response = await fetch(
-      `https://safebrowsing.googleapis.com/v4/threatMatches:find?key=${GOOGLE_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      return res.status(response.status).json({
-        error: "Error en Google Safe Browsing API",
-        details: errorData,
-      });
-    }
-
-    const data = await response.json();
-
-    // Format response
-    const formatted = {
-      safe: !data.matches || data.matches.length === 0,
-      threats: data.matches || [],
-    };
-
-    // Save to DB
-    const page = await Page.findOne({ url: domain });
-
-    if (page) {
-      page.reports = page.reports.filter((r) => r.source !== "Google");
-      page.reports.push({
-        source: "Google",
-        date: new Date(),
-        data: formatted,
-      });
-      page.lastScanned = new Date();
-      await page.save();
-    } else {
-      await Page.create({
-        url: domain,
-        reports: [{ source: "Google", date: new Date(), data: formatted }],
-        lastScanned: new Date(),
-      });
-    }
-
-    res.json(formatted);
-  } catch (error) {
-    console.error("Error checking URL:", error);
-    res.status(500).json({
-      error: "Error al verificar la URL",
-      message: error.message,
     });
   }
 });
