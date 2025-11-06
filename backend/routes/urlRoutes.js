@@ -53,6 +53,47 @@ async function checkUrlReputation(targetUrl, strictness = 0) {
   }
 }
 
+async function calculateScore(domainName) {
+  const page = await Page.findOne({ url: domainName });
+  if (!page) return;
+
+  let score = 100;
+
+  // VIRUSTOTAL
+  const vt = page.reports.find((r) => r.source === "VirusTotal");
+  if (vt?.data) {
+    const {
+      malicious = 0,
+      suspicious = 0,
+      undetected = 0,
+      harmless = 0,
+    } = vt.data;
+    score -= 10 * malicious;
+    score -= 5 * suspicious;
+    if (undetected > harmless && malicious === 0 && suspicious === 0)
+      score -= 10;
+  }
+
+  // CRT
+  const crt = page.reports.find((r) => r.source === "CRT");
+  if (crt?.data) {
+    if (crt.data.https === false) score -= 20;
+    if (crt.data.domain_match === false) score -= 10;
+  }
+
+  // IPQS
+  const ipqs = page.reports.find((r) => r.source === "IPQS");
+  if (ipqs?.data?.score !== undefined) score -= ipqs.data.score;
+
+  if (score < 0) score = 0;
+
+  page.currentScore = score;
+  page.lastScanned = new Date();
+  await page.save();
+
+  return score;
+}
+
 router.get("/check-ipqs", async (req, res) => {
   // #swagger.tags = ['URLs']
   // #swagger.description = 'Uses IPQS API for safety info '
@@ -97,7 +138,7 @@ router.get("/check-ipqs", async (req, res) => {
         lastScanned: new Date(),
       });
     }
-
+    await calculateScore(domain);
     res.status(200).json(formatted);
   } else if (
     result.message &&
@@ -195,7 +236,7 @@ router.get("/check-vt", async (req, res) => {
         lastScanned: new Date(),
       });
     }
-
+    await calculateScore(domain);
     res.status(200).json({
       success: true,
       stats: stats,
@@ -281,26 +322,38 @@ router.get("/check-crt", async (req, res) => {
       }
     });
 
-    // Save to DB if successful
-    if (result.success) {
-      const domainName = extractDomain(domain);
-      const page = await Page.findOne({ url: domainName });
+    const domainName = extractDomain(domain);
+    let page = await Page.findOne({ url: domainName });
 
-      if (page) {
-        page.reports = page.reports.filter((r) => r.source !== "CRT");
-        page.reports.push({ source: "CRT", date: new Date(), data: result });
-        page.lastScanned = new Date();
-        await page.save();
-      } else {
-        await Page.create({
-          url: domainName,
-          reports: [{ source: "CRT", date: new Date(), data: result }],
-          lastScanned: new Date(),
-        });
-      }
+    // Always store a report — fallback includes the error message
+    const crtData = result.success
+      ? result
+      : {
+          success: true,
+          https: false,
+          domain: domainName,
+          domain_match: false,
+          issuer: "Unknown",
+          valid_from: null,
+          valid_to: null,
+          error: result.message || "HTTPS not available or certificate invalid",
+        };
+
+    if (page) {
+      page.reports = page.reports.filter((r) => r.source !== "CRT");
+      page.reports.push({ source: "CRT", date: new Date(), data: crtData });
+      page.lastScanned = new Date();
+      await page.save();
+    } else {
+      await Page.create({
+        url: domainName,
+        reports: [{ source: "CRT", date: new Date(), data: crtData }],
+        lastScanned: new Date(),
+      });
     }
 
-    res.json(result);
+    await calculateScore(domainName);
+    res.json(crtData);
   } catch (error) {
     res.status(500).json({
       success: false,
