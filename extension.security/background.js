@@ -1,3 +1,5 @@
+// logica de ejecucion automatica tras ingresar a una pagina
+
 chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   if (details.frameId === 0) {
     const url = new URL(details.url);

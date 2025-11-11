@@ -10,6 +10,13 @@ Extension web para brindar seguridad a la navegación en linea de manera pedagog
 
 ## Ejecución
 
+### Base de datos
+
+```
+cd backend
+docker compose up -d
+```
+
 ### Backend
 
 ```

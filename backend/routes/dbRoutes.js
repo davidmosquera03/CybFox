@@ -3,6 +3,8 @@ const router = express.Router();
 const { extractDomain } = require("../utils/helpers");
 const Page = require("../models/Page");
 
+// Routes related to editing the MongoDB db
+
 // Check if page is blacklisted
 router.get("/check-blacklist/:url", async (req, res) => {
   // #swagger.tags = ['Database']

@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 
+// routes related to testing server responds
+
 router.get("/test", (req, res) => {
   // #swagger.tags = ['Tests']
   res.json({

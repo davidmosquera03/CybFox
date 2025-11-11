@@ -11,7 +11,8 @@ const Page = require("../models/Page");
 // API KEYS
 const IPQS_API_KEY = process.env.IPQS_KEY;
 const VT_API_KEY = process.env.VT_KEY;
-const GOOGLE_KEY = process.env.GOOGLE_KEY;
+
+// routes related to URL analysis
 
 async function checkUrlReputation(targetUrl, strictness = 0) {
   if (!IPQS_API_KEY) {
