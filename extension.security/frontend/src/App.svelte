@@ -1,47 +1,137 @@
+
 <script>
-  import svelteLogo from './assets/svelte.svg'
-  import viteLogo from '/vite.svg'
-  import Counter from './lib/Counter.svelte'
+  import { onMount } from 'svelte';
+  import { fade, fly, scale } from 'svelte/transition';
+  import './app.css';
+
+  let currentUrl = '';
+  let loading = false;
+  let status = '';
+  let resultText = '';
+  let lastAction = '';
+
+  async function loadCurrentTabUrl() {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      currentUrl = tab?.url ?? '';
+    } catch (err) {
+      currentUrl = 'No se pudo obtener la URL';
+    }
+  }
+
+  async function callBackend(endpoint) {
+    try {
+      loading = true;
+      status = 'Escaneando...';
+      resultText = '';
+
+      const res = await fetch(`http://localhost:3000${endpoint}`);
+      const data = await res.json();
+      resultText = JSON.stringify(data, null, 2);
+      status = 'Escaneo completado';
+    } catch (err) {
+      status = 'Error al comunicar con el backend';
+      resultText = String(err);
+    } finally {
+      loading = false;
+    }
+  }
+
+  function handlePrintUrl() {
+    lastAction = 'URL actual';
+    status = 'URL detectada';
+    resultText = currentUrl || 'No se encontró URL activa';
+  }
+
+  async function handleTestApi() {
+    lastAction = 'Test API';
+    await callBackend('/api/test');
+  }
+
+  async function handleInvertUrl() {
+    lastAction = 'Invertir URL';
+    if (!currentUrl) {
+      status = 'No hay URL para invertir';
+      return;
+    }
+    await callBackend(`/api/invert-url?url=${encodeURIComponent(currentUrl)}`);
+  }
+
+  async function handleIpqs() {
+    lastAction = 'IPQS check';
+    if (!currentUrl) {
+      status = 'No hay URL para analizar';
+      return;
+    }
+    await callBackend(`/api/check-ipqs?url=${encodeURIComponent(currentUrl)}`);
+  }
+
+  // 🟢 AUTOSCANNER: al abrir el popup
+  onMount(() => {
+  loadCurrentTabUrl();   // solo obtener la URL, sin llamar a IPQS ni nada
+});
+
+  // onMount(async () => {
+  //   await loadCurrentTabUrl();
+  //   if (currentUrl) {
+  //     lastAction = 'Escaneo automático IPQS';
+  //     await handleIpqs();
+  //   }
+  // });
 </script>
 
-<main>
-  <div>
-    <a href="https://vite.dev" target="_blank" rel="noreferrer">
-      <img src={viteLogo} class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
+<main
+  class="popup"
+  class:loading={loading}
+  in:fade={{ duration: 200 }}
+>
+  <header class="header" in:fly={{ y: -10, duration: 250 }}>
+    <div class="logo-dot"></div>
+    <div class="title-block">
+      <h1>CybFox Security Scanner</h1>
+      <p class="subtitle">Analiza la seguridad de la página actual</p>
+    </div>
+  </header>
 
-  <div class="card">
-    <Counter />
-  </div>
+  <section class="url-card" in:fly={{ y: -5, duration: 260, delay: 100 }}>
+    <div class="label">URL actual</div>
+    <div class="url-text" title={currentUrl}>{currentUrl || 'Cargando URL...'}</div>
+    <button class="secondary" on:click={loadCurrentTabUrl}>Refrescar URL</button>
+  </section>
 
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
+  <section class="scanner-section" in:scale={{ duration: 250, start: 0.92 }}>
+    <div class="scanner-frame">
+      <div class="scanner-grid"></div>
+      <div class="scanner-line" aria-hidden={!loading}></div>
+      <div class="scanner-center">
+        {#if loading}
+          <span>Escaneando…</span>
+        {:else}
+          <span>Listo para escanear</span>
+        {/if}
+      </div>
+    </div>
+  </section>
 
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
+  <section class="actions" in:fly={{ y: 8, duration: 260, delay: 80 }}>
+    <button on:click={handlePrintUrl}>Mostrar URL</button>
+    <button on:click={handleTestApi}>Test API</button>
+    <button on:click={handleInvertUrl}>Invertir URL</button>
+    <button on:click={handleIpqs}>IPQS check</button>
+  </section>
+
+  <section class="status-card" in:fade={{ duration: 220, delay: 120 }}>
+    <div class="status-header">
+      <span class="status-title">Estado</span>
+      {#if lastAction}
+        <span class="status-tag">{lastAction}</span>
+      {/if}
+    </div>
+
+    <p class="status-text">{status || 'Sin acciones aún.'}</p>
+
+    {#if resultText}
+      <pre class="result-box">{resultText}</pre>
+    {/if}
+  </section>
 </main>
-
-<style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
-  }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
-  }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
-  }
-</style>
