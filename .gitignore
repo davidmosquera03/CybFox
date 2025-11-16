@@ -1,2 +1,29 @@
 backend/.env
 backend/node_modules
+
+
+
+# Logs
+extension.security/frontend/logs
+extension.security/frontend/*.log
+extension.security/frontend/npm-debug.log*
+extension.security/frontend/yarn-debug.log*
+extension.security/frontend/yarn-error.log*
+extension.security/frontend/pnpm-debug.log*
+extension.security/frontend/lerna-debug.log*
+
+extension.security/frontend/node_modules
+extension.security/frontend/dist
+extension.security/frontend/dist-ssr
+extension.security/frontend/*.local
+
+# Editor directories and files
+extension.security/frontend/.vscode/*
+extension.security/frontend/!.vscode/extensions.json
+extension.security/frontend/.idea
+extension.security/frontend/.DS_Store
+extension.security/frontend/*.suo
+extension.security/frontend/*.ntvs*
+extension.security/frontend/*.njsproj
+extension.security/frontend/*.sln
+extension.security/frontend/*.sw?
