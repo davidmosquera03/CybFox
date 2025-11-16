@@ -1,7 +1,12 @@
 import { defineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [svelte()],
+  // 👇 ESTO ES CLAVE: rutas relativas para que el popup encuentre los assets
+  base: './',
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+  },
 })
