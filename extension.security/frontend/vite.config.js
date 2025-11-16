@@ -9,7 +9,7 @@ import {
 } from '@sveltejs/vite-plugin-svelte'
 
 export default defineConfig({
-  base: '',
+  base: './',
   plugins: [svelte()],
   build: {
     outDir: 'dist', 
@@ -18,6 +18,7 @@ export default defineConfig({
     target: 'es2015',
     rollupOptions: {
       input: {
+        main: resolve(__dirname, 'index.html'),
         blocked: resolve(__dirname, 'src/blocked/blocked.html')
       },
       output: {

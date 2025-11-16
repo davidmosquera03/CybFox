@@ -28,7 +28,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
 
       if (blacklistData.isBlacklisted) {
         chrome.tabs.update(details.tabId, {
-          url: chrome.runtime.getURL("dist/src/blocked/blocked.html"),
+          url: chrome.runtime.getURL("frontend/dist/src/blocked/blocked.html"),
         });
         return;
       }
