@@ -2,22 +2,29 @@ import {
   defineConfig
 } from 'vite'
 import {
-  svelte
-} from '@sveltejs/vite-plugin-svelte'
-import {
   resolve
 } from 'path'
-
+import {
+  svelte
+} from '@sveltejs/vite-plugin-svelte'
 
 export default defineConfig({
+  base: '',
   plugins: [svelte()],
   build: {
-    outDir: '../dist', // compilamos directo a extension.security/dist
-    emptyOutDir: false, // no borra todo lo que ya tengas
+    outDir: 'dist', 
+    emptyOutDir: true,
+    modulePreload: false,
+    target: 'es2015',
     rollupOptions: {
       input: {
-        blocked: resolve(__dirname, 'src/blocked.html'),
-        popup: resolve(__dirname, 'src/popup.html')
+        blocked: resolve(__dirname, 'src/blocked/blocked.html')
+      },
+      output: {
+        entryFileNames: `[name].js`,
+        chunkFileNames: `[name].js`,
+        assetFileNames: `[name].[ext]`,
+        manualChunks: undefined
       }
     }
   }

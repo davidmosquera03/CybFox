@@ -5,9 +5,15 @@
   "permissions": ["activeTab", "webNavigation", "tabs"],
   "host_permissions": ["http://localhost:3000/*"],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "frontend/dist/popup.html"
   },
   "background": {
     "service_worker": "background.js"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["dist/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
