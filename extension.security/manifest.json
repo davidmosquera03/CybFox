@@ -5,7 +5,7 @@
   "permissions": ["activeTab", "webNavigation", "tabs"],
   "host_permissions": ["http://localhost:3000/*"],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "frontend/dist/index.html"
   },
   "background": {
     "service_worker": "background.js"
