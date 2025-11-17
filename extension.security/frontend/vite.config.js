@@ -19,7 +19,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        blocked: resolve(__dirname, 'src/blocked/blocked.html')
+        blocked: resolve(__dirname, 'blocked.html')
       },
       output: {
         entryFileNames: `[name].js`,
@@ -30,3 +30,4 @@ export default defineConfig({
     }
   }
 })
+

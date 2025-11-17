@@ -1,5 +1,7 @@
-import Blocked from './Blocked.svelte';
+import Blocked from "./Blocked.svelte";
 
-new Blocked({
-    target: document.getElementById('app'),
+const app = new Blocked({
+  target: document.getElementById("app"),
 });
+
+export default app;

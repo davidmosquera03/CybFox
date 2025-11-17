@@ -1,19 +1,27 @@
 {
   "manifest_version": 3,
-  "name": "URL Safety Checker",
+  "name": "CybFox Security",
   "version": "1.0",
+
   "permissions": ["activeTab", "webNavigation", "tabs"],
   "host_permissions": ["http://localhost:3000/*"],
+
   "action": {
     "default_popup": "frontend/dist/index.html"
   },
+
   "background": {
     "service_worker": "background.js"
   },
+
   "web_accessible_resources": [
     {
-      "resources": ["dist/*"],
+      "resources": ["blocked.html", "blocked.js"],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  }
 }
