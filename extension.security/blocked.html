@@ -38,6 +38,66 @@
         padding: 24px;
       }
 
+/* PANEL DESLIZANTE IA */
+.ai-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.96);
+  border-left: 1px solid rgba(249, 115, 22, 0.35);
+  box-shadow: -4px 0 20px rgba(249, 115, 22, 0.25);
+  transform: translateX(100%);
+  transition: transform 0.4s ease;
+  z-index: 999999;
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-panel.show {
+  transform: translateX(0);
+}
+
+.ai-panel-content {
+  padding: 24px;
+  overflow-y: auto;
+  color: #f3f4f6;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+#ai-panel-close {
+  background: transparent;
+  border: none;
+  color: #f97316;
+  font-size: 20px;
+  cursor: pointer;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+#ai-panel-close:hover {
+  color: #fb923c;
+}
+
+.ai-panel h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  color: #f97316;
+  text-shadow: 0 0 8px rgba(249, 115, 22, 0.55);
+}
+
+#ai-panel-text {
+  white-space: pre-line;
+  color: #e2e8f0;
+}
+
+
+
       .page {
         width: 100%;
         max-width: 960px;
@@ -430,6 +490,14 @@
   </head>
 
   <body>
+    <div id="ai-panel" class="ai-panel hidden">
+      <div class="ai-panel-content">
+        <button id="ai-panel-close">✕</button>
+        <h2>Análisis de seguridad</h2>
+        <div id="ai-panel-text">Cargando análisis...</div>
+      </div>
+    </div>
+
     <div class="page">
       <div class="card">
         <div class="glow"></div>
@@ -520,5 +588,6 @@
 
     <!-- JS externo para cumplir CSP -->
     <script src="blocked.js"></script>
+
   </body>
 </html>
