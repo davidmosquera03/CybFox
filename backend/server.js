@@ -1,8 +1,11 @@
 require("dotenv").config();
+const assistantRoutes = require("./routes/assistantRoutes");
+
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
 
 const mongoose = require("mongoose");
+
 
 // Connect to MongoDB
 mongoose.connect(
@@ -17,6 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 const testRoutes = require("./routes/testRoutes");
 const urlRoutes = require("./routes/urlRoutes");
 const dbRoutes = require("./routes/dbRoutes");
+
+app.use("/assistant", assistantRoutes);
 
 app.use("/api/db", dbRoutes);
 app.use("/api", [testRoutes, urlRoutes]);
