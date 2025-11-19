@@ -258,6 +258,53 @@
     }
   });
 
+  const pillBtn = document.querySelector(".pill");
+  const panel = document.getElementById("ai-panel");
+  const panelText = document.getElementById("ai-panel-text");
+  const panelClose = document.getElementById("ai-panel-close");
+
+  pillBtn.addEventListener("click", async () => {
+    panel.classList.remove("hidden");
+    panel.classList.add("show");
+
+    panelText.textContent = "Consultando análisis de la IA...";
+
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const targetUrl = urlParams.get("url");
+
+      const response = await fetch("http://localhost:3000/assistant/explain-ipqs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          url: targetUrl
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        panelText.textContent = data.explanation;
+      } else {
+        panelText.textContent = "No se pudo obtener explicación.";
+      }
+
+    } catch (err) {
+      panelText.textContent = "Error al conectar con la IA.";
+    }
+  });
+
+  panelClose.addEventListener("click", () => {
+    panel.classList.remove("show");
+    setTimeout(() => {
+      panel.classList.add("hidden");
+    }, 400);
+  });
+
+
+
   document
     .getElementById("btn-dashboard")
     .addEventListener("click", () => {
