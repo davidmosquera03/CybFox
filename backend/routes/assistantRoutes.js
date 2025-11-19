@@ -158,3 +158,107 @@ Responde:
 }
 
 module.exports = router;
+
+
+
+router.post("/chat", async (req, res) => {
+  try {
+    const { message, history = [] } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: "Falta el campo 'message'."
+      });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    const contents = [];
+
+    contents.push({
+        role: "user",
+            parts: [{
+                text: `
+    Eres un asistente experto en ciberseguridad web.
+    Responde súper directo, claro y breve.
+    Siempre entrega frases completas y nunca termines una oración a medias.
+    Si te piden definiciones, explícalas en máximo 3 líneas.
+    Si te piden recomendaciones, dales bullets cortos.
+    Habla como alguien joven, relajado, sin tecnicismos innecesarios.
+    `
+            }]
+        }
+    );
+for (const msg of history) {
+  contents.push({
+    role: msg.role,
+    parts: [{ text: msg.text }]
+  });
+}
+
+
+contents.push({
+    role: "user",
+    parts: [{
+        text: message
+    }]
+});
+
+    // Llamada a Gemini
+   const gResponse = await fetch(
+       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
+           method: "POST",
+           headers: {
+               "Content-Type": "application/json"
+           },
+           body: JSON.stringify({
+               contents,
+               generationConfig: {
+                   temperature: 0.3,
+                   maxOutputTokens: 2048
+               }
+           })
+       }
+   );
+
+
+    if (!gResponse.ok) {
+      const t = await gResponse.text();
+      return res.status(500).json({ success: false, error: t });
+    }
+
+    const data = await gResponse.json();
+
+    const parts = data?.candidates?.[0]?.content?.parts;
+    let reply = "";
+
+    if (Array.isArray(parts)) {
+      reply = parts.map(p => p.text || "").join("\n").trim();
+    }
+
+    if (!reply) reply = "No pude generar respuesta.";
+
+    // Nuevo historial
+    const newHistory = [
+      ...history,
+      { role: "user", text: message },
+      { role: "model", text: reply }
+    ];
+
+    return res.json({
+      success: true,
+      reply,
+      history: newHistory,
+      raw: data
+    });
+
+  } catch (err) {
+    console.error("Error en /assistant/chat:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Error interno."
+    });
+  }
+});
+
