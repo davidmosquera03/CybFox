@@ -3,7 +3,7 @@
   "name": "CybFox Security",
   "version": "1.0",
 
-  "permissions": ["activeTab", "webNavigation", "tabs"],
+  "permissions": ["activeTab", "webNavigation", "tabs", "storage"],
   "host_permissions": ["http://localhost:3000/*"],
 
   "action": {
@@ -21,7 +21,7 @@
     }
   ],
 
-  "content_security_policy": {
+  "content_security_policy": {  
     "extension_pages": "script-src 'self'; object-src 'self';"
   }
 }
