@@ -227,15 +227,19 @@
     navigator.clipboard.writeText(currentUrl).catch(() => {});
   }
 
-  function openDashboard() {
-    try {
-      if (typeof chrome !== "undefined" && chrome.runtime) {
-        chrome.runtime.sendMessage({ type: "OPEN_DASHBOARD", url: currentUrl });
-      }
-    } catch (e) {
-      console.error("No se pudo abrir el dashboard", e);
+function openDashboard() {
+  try {
+    if (typeof chrome !== "undefined" && chrome.runtime) {
+      const url = chrome.runtime.getURL(
+        "frontend/dist/index.html?view=dashboard"
+      );
+      chrome.tabs.create({ url });
     }
+  } catch (e) {
+    console.error("No se pudo abrir el dashboard", e);
   }
+}
+
 
   // ================= BACKEND CALLS =================
 
