@@ -218,6 +218,43 @@ router.get("/get-page/:url", async (req, res) => {
   });
 });
 
+// Set (overwrite) tags for a page
+router.post("/set-tags", async (req, res) => {
+  const { url, tags } = req.body;
+
+  if (!url || !Array.isArray(tags)) {
+    return res.status(400).json({
+      success: false,
+      message: "url and tags array required",
+    });
+  }
+
+  const domain = extractDomain(url);
+  if (!domain) {
+    return res.status(400).json({ success: false, message: "Invalid URL" });
+  }
+
+  let page = await Page.findOne({ url: domain });
+
+  if (!page) {
+    page = await Page.create({
+      url: domain,
+      tags,
+      reports: [],
+    });
+  } else {
+    page.tags = tags;
+    await page.save();
+  }
+
+  res.json({
+    success: true,
+    domain,
+    tags,
+  });
+});
+
+
 // WHITELIST
 router.get("/check-whitelist/:url", async (req, res) => {
   // #swagger.tags = ['Database']
@@ -268,6 +305,8 @@ router.get("/get-whitelist", async (req, res) => {
   });
 });
 
+
+// ESTO ES NUEVOOO OJOOOOOOOOOO 
 // Toggle whitelist status
 router.post("/toggle-whitelist", async (req, res) => {
   // #swagger.tags = ['Database']
@@ -305,5 +344,68 @@ router.post("/toggle-whitelist", async (req, res) => {
 
   res.json({ success: true, isWhitelisted: page.isWhitelisted });
 });
+
+// =======================
+// SET TAGS (máx. 5 por página)
+// =======================
+
+router.post("/set-tags", async (req, res) => {
+  // #swagger.tags = ['Database']
+  // #swagger.description = 'Reemplaza el arreglo completo de tags de una página (máx. 5)'
+
+  try {
+    const { url, tags } = req.body;
+
+    if (!url || !Array.isArray(tags)) {
+      return res.status(400).json({
+        success: false,
+        message: "Se requieren 'url' y 'tags' (array).",
+      });
+    }
+
+    // Limitar a 5 tags y quitar duplicados
+    const uniqueTags = [...new Set(tags)].slice(0, 5);
+
+    // Si por alguna razón llega vacío, lo permitimos (borra etiquetas)
+    const domain = extractDomain(url);
+    if (!domain) {
+      return res.status(400).json({
+        success: false,
+        message: "URL inválida.",
+      });
+    }
+
+    // Buscar página por dominio
+    let page = await Page.findOne({ url: domain });
+
+    if (!page) {
+      // Si no existe, se crea
+      page = await Page.create({
+        url: domain,
+        tags: uniqueTags,
+        reports: [],
+      });
+    } else {
+      // Si existe, se reemplaza el arreglo completo de tags
+      page.tags = uniqueTags;
+      await page.save();
+    }
+
+    return res.json({
+      success: true,
+      domain,
+      tags: page.tags,
+    });
+  } catch (err) {
+    console.error("[CybFox] Error en /set-tags:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Error interno al guardar etiquetas.",
+      error: String(err),
+    });
+  }
+});
+
+
 
 module.exports = router;
