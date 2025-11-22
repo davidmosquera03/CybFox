@@ -59,7 +59,7 @@ router.post("/explain-ipqs", async (req, res) => {
     }
 
 const gResponse = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -207,7 +207,7 @@ contents.push({
 
     // Llamada a Gemini
    const gResponse = await fetch(
-       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`, {
+       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
            method: "POST",
            headers: {
                "Content-Type": "application/json"
