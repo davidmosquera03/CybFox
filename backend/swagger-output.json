@@ -269,6 +269,42 @@
         }
       }
     },
+    "/api/db/set-tags": {
+      "post": {
+        "tags": [
+          "Database"
+        ],
+        "description": "Reemplaza el arreglo completo de tags de una página (máx. 5)",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "example": "any"
+                },
+                "tags": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
     "/api/db/check-whitelist/{url}": {
       "get": {
         "tags": [

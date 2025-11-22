@@ -59,7 +59,7 @@ router.post("/explain-ipqs", async (req, res) => {
     }
 
 const gResponse = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -72,7 +72,7 @@ const gResponse = await fetch(
             }],
             generationConfig: {
                 temperature: 0.2,
-                maxOutputTokens: 2048
+                maxOutputTokens: 4072
             },
             safetySettings: [{
                     category: "HARM_CATEGORY_DANGEROUS_CONTENT",
@@ -141,7 +141,7 @@ function generateIPQSPrompt(report) {
   const details = report?.details || JSON.stringify(report);
 
   return `
-Eres un asistente pedagógico de ciberseguridad que explica en lenguaje simple
+Eres un asistente pedagógico de ciberseguridad llamado Cybfox que explica en lenguaje simple
 si una web es segura o peligrosa.
 
 - Score/IPQS: ${score}
@@ -149,8 +149,9 @@ si una web es segura o peligrosa.
 - Flags: ${flags}
 - Detalle técnico: ${details}
 
+Ten en cuenta que entre mas bajo ${score} sea, menos segura es la web.
 Responde:
-1) Explicación clara en 6–8 líneas.
+1) Explicación clara en 2-4 líneas.
 2) Bullets con razones.
 3) Bullets con recomendaciones prácticas.
 4) Si faltan datos, dilo en una línea.
@@ -207,7 +208,7 @@ contents.push({
 
     // Llamada a Gemini
    const gResponse = await fetch(
-       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
            method: "POST",
            headers: {
                "Content-Type": "application/json"
@@ -216,7 +217,7 @@ contents.push({
                contents,
                generationConfig: {
                    temperature: 0.3,
-                   maxOutputTokens: 2048
+                   maxOutputTokens: 4072
                }
            })
        }
