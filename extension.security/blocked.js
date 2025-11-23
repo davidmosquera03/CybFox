@@ -133,8 +133,65 @@
           }
 
           // ====== Certificado SSL ======
+
+
           const crtEl = document.getElementById("crt-text");
-          if (crtEl) crtEl.textContent = crt.https ? "Válido" : "No válido";
+
+          if (crtEl) {
+            // Mensaje mientras consultamos
+            crtEl.textContent = "Analizando certificado...";
+
+            // Si tenemos dominio (hostname) de la URL bloqueada
+            if (domain && domain !== "Este sitio") {
+              const encodedDomain = encodeURIComponent(domain);
+
+              // Usamos el MISMO endpoint que el dashboard
+              fetch(`http://localhost:3000/api/check-crt?domain=${encodedDomain}`)
+                .then((r) => r.json())
+                .then((data) => {
+                  // Campo de HTTPS (aceptamos varios nombres por si acaso)
+                  const isHttps = !!(
+                    data &&
+                    (data.https ?? data.ssl ?? data.tls)
+                  );
+
+                  // Intentamos detectar el campo de “coincide con el dominio”
+                  const matches =
+                    typeof data?.matchesDomain === "boolean"
+                      ? data.matchesDomain
+                      : typeof data?.domainMatches === "boolean"
+                        ? data.domainMatches
+                        : typeof data?.match_domain === "boolean"
+                          ? data.match_domain
+                          : typeof data?.coincideDominio === "boolean"
+                            ? data.coincideDominio
+                            : null;
+
+                  let label;
+                  if (!isHttps) {
+                    label = "No válido (sin HTTPS)";
+                  } else if (matches === false) {
+                    // Aquí alineamos con el dashboard cuando dice
+                    // "Coincide con el dominio: No"
+                    label = "No válido (no coincide con el dominio)";
+                  } else {
+                    label = "Válido";
+                  }
+
+                  crtEl.textContent = label;
+                })
+                .catch(() => {
+                  // Si falla la API, usamos lo que guardó background en storage
+                  const isHttps = !!crt.https;
+                  crtEl.textContent = isHttps ? "Válido" : "No válido";
+                });
+            } else {
+              // Sin dominio claro → solo usamos el valor simple de storage
+              crtEl.textContent = crt.https ? "Válido" : "No válido";
+            }
+          }
+
+
 
           // ====== Último escaneo ======
           const lastScanEl = document.getElementById("last-scan");
@@ -214,30 +271,17 @@
     const dashBtn = document.getElementById("btn-dashboard");
     if (dashBtn) {
       dashBtn.onclick = () => {
-        const url = chrome.runtime.getURL(
-          "frontend/dist/index.html?view=dashboard"
-        );
-        chrome.tabs.create({ url });
+        const basePath = "frontend/dist/index.html?view=dashboard";
+        const finalPath = encodedUrl
+          ? `${basePath}&url=${encodedUrl}`
+          : basePath;
+
+        const dashUrl = chrome.runtime.getURL(finalPath);
+        chrome.tabs.create({ url: dashUrl });
       };
     }
 
-    const unsafeBtn = document.getElementById("btn-unsafe");
-    if (unsafeBtn) {
-      if (!fullUrl) {
-        unsafeBtn.disabled = true;
-        unsafeBtn.title = "No se pudo recuperar la URL original.";
-      } else {
-        unsafeBtn.onclick = () => {
-          // Permitimos temporalmente esta URL y redirigimos
-          chrome.runtime.sendMessage(
-            { type: "ALLOW_TEMP", url: fullUrl },
-            () => {
-              window.location.href = fullUrl;
-            }
-          );
-        };
-      }
-    }
+
   } catch (e) {
     console.error("[CybFox] Error inicial en blocked.js:", e);
   }

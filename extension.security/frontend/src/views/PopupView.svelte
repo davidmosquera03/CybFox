@@ -1,5 +1,6 @@
 <script>
   import { onMount } from "svelte";
+  import logoPopup from "../assets/logo-popup.png";
 
   const DEFAULT_TAG_OPTIONS = [
     "Posible estafa / scam",
@@ -7,7 +8,7 @@
     "Contenido adulto",
     "Sospechoso / spam",
     "Sitio confiable",
-    "Otro contenido no deseado"
+    "Otro contenido no deseado",
   ];
 
   const TAG_KEY_PREFIX = "cybfox-tags:";
@@ -83,18 +84,53 @@
     }
   }
 
-  function saveTags() {
-    if (!currentUrl) return;
-    const key = getStorageKey(currentUrl);
-    localStorage.setItem(key, JSON.stringify(tags));
+const API_BASE = "http://localhost:3000/api";
+
+// tags debe ser tu array de strings, ej: ["Sospechoso / spam", "Phishing"]
+async function saveTags() {
+  if (!currentUrl) return;
+
+  // 1) Sigue guardando en localStorage (para que el popup recuerde la selección del usuario)
+  const key = getStorageKey(currentUrl);
+  localStorage.setItem(key, JSON.stringify(tags));
+
+  // 2) Además guardar en la BD para que el Dashboard lo lea
+  try {
+    const res = await fetch("http://localhost:3000/api/db/set-tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: currentUrl,  // URL o dominio, backend extrae dominio
+        tags,             // el array completo: ["Sospechoso", "Phishing"]
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok || !json.success) {
+      console.warn("[CybFox] No se pudieron guardar tags en backend:", json);
+    } else {
+      console.log("[CybFox] Etiquetas guardadas correctamente:", json.tags);
+    }
+  } catch (err) {
+    console.error("[CybFox] Error llamando a /db/set-tags:", err);
   }
+}
+
 
   function chipClass(label) {
     const lower = label.toLowerCase();
-    if (lower.includes("estafa") || lower.includes("scam") || lower.includes("robo")) {
+    if (
+      lower.includes("estafa") ||
+      lower.includes("scam") ||
+      lower.includes("robo")
+    ) {
       return "chip-danger";
     }
-    if (lower.includes("adult") || lower.includes("spam") || lower.includes("sospech")) {
+    if (
+      lower.includes("adult") ||
+      lower.includes("spam") ||
+      lower.includes("sospech")
+    ) {
       return "chip-warn";
     }
     if (lower.includes("confiable") || lower.includes("seguro")) {
@@ -129,7 +165,7 @@
         label: "DESCONOCIDO",
         badgeClass: "risk-unknown",
         pieClass: "pie-unknown",
-        category: "Sin información suficiente"
+        category: "Sin información suficiente",
       };
     }
     const risk = 100 - safe;
@@ -139,7 +175,7 @@
         label: "SEGURO",
         badgeClass: "risk-safe",
         pieClass: "pie-safe",
-        category: "Probablemente legítimo"
+        category: "Probablemente legítimo",
       };
     }
     if (risk <= 50) {
@@ -147,14 +183,14 @@
         label: "ADVERTENCIA",
         badgeClass: "risk-warn",
         pieClass: "pie-warn",
-        category: "Sitio con señales mixtas"
+        category: "Sitio con señales mixtas",
       };
     }
     return {
       label: "PELIGROSO",
       badgeClass: "risk-danger",
       pieClass: "pie-danger",
-      category: "Sitio potencialmente riesgoso"
+      category: "Sitio potencialmente riesgoso",
     };
   }
 
@@ -165,7 +201,7 @@
         label: "DESCONOCIDO",
         badgeClass: "risk-unknown",
         pieClass: "pie-unknown",
-        category: "Sin información suficiente"
+        category: "Sin información suficiente",
       };
     }
 
@@ -175,7 +211,7 @@
         badgeClass: "risk-safe",
         pieClass: "pie-safe",
         category:
-          "Sin detecciones: ningún motor marca la URL como maliciosa o sospechosa."
+          "Sin detecciones: ningún motor marca la URL como maliciosa o sospechosa.",
       };
     }
 
@@ -188,7 +224,7 @@
         badgeClass: "risk-warn",
         pieClass: "pie-warn",
         category:
-          "Uno o pocos motores de seguridad marcan esta URL como sospechosa. Recomendado navegar con precaución."
+          "Uno o pocos motores de seguridad marcan esta URL como sospechosa. Recomendado navegar con precaución.",
       };
     }
 
@@ -199,7 +235,7 @@
         badgeClass: "risk-danger",
         pieClass: "pie-danger",
         category:
-          "Varios motores detectan esta URL como maliciosa o sospechosa. Es mejor no introducir datos sensibles."
+          "Varios motores detectan esta URL como maliciosa o sospechosa. Es mejor no introducir datos sensibles.",
       };
     }
 
@@ -209,7 +245,7 @@
       badgeClass: "risk-danger",
       pieClass: "pie-danger",
       category:
-        "Muchos motores de seguridad consideran esta URL maliciosa. Se recomienda NO continuar ni introducir datos."
+        "Muchos motores de seguridad consideran esta URL maliciosa. Se recomienda NO continuar ni introducir datos.",
     };
   }
 
@@ -227,19 +263,22 @@
     navigator.clipboard.writeText(currentUrl).catch(() => {});
   }
 
-function openDashboard() {
-  try {
-    if (typeof chrome !== "undefined" && chrome.runtime) {
-      const url = chrome.runtime.getURL(
-        "frontend/dist/index.html?view=dashboard"
-      );
-      chrome.tabs.create({ url });
-    }
-  } catch (e) {
-    console.error("No se pudo abrir el dashboard", e);
-  }
-}
+  function openDashboard() {
+    try {
+      if (typeof chrome !== "undefined" && chrome.runtime) {
+        const encoded = encodeURIComponent(currentUrl || "");
 
+        const basePath = "frontend/dist/index.html?view=dashboard";
+        const finalPath = encoded ? `${basePath}&url=${encoded}` : basePath;
+
+        const url = chrome.runtime.getURL(finalPath);
+
+        chrome.tabs.create({ url });
+      }
+    } catch (e) {
+      console.error("No se pudo abrir el dashboard", e);
+    }
+  }
 
   // ================= BACKEND CALLS =================
 
@@ -255,7 +294,7 @@ function openDashboard() {
 
     try {
       const vt = await fetch(
-        `http://localhost:3000/api/check-vt?url=${encodeURIComponent(url)}`
+        `http://localhost:3000/api/check-vt?url=${encodeURIComponent(url)}`,
       ).then(safeJSON);
 
       if (vt && vt.success && vt.stats) {
@@ -263,7 +302,7 @@ function openDashboard() {
           malicious = 0,
           suspicious = 0,
           undetected = 0,
-          harmless = 0
+          harmless = 0,
         } = vt.stats;
 
         const total = malicious + suspicious + undetected + harmless;
@@ -342,15 +381,11 @@ function openDashboard() {
     try {
       const res = await fetch(
         `http://localhost:3000/api/check-ipqs?url=${encodeURIComponent(
-          currentUrl
-        )}`
+          currentUrl,
+        )}`,
       ).then(safeJSON);
 
-      const rawRisk =
-        res?.fraud_score ??
-        res?.risk_score ??
-        res?.score ??
-        null; // 0 seguro – 100 muy riesgoso
+      const rawRisk = res?.fraud_score ?? res?.risk_score ?? res?.score ?? null; // 0 seguro – 100 muy riesgoso
 
       if (rawRisk == null) {
         ipqsError = "No se pudo obtener el score de IPQS.";
@@ -392,8 +427,8 @@ function openDashboard() {
     try {
       const res = await fetch(
         `http://localhost:3000/api/check-crt?domain=${encodeURIComponent(
-          domain
-        )}`
+          domain,
+        )}`,
       ).then(safeJSON);
 
       if (!res || res.success === false) {
@@ -483,8 +518,9 @@ function openDashboard() {
               u.searchParams.has("url")
             ) {
               const originalEncoded = u.searchParams.get("url");
-              const original =
-                originalEncoded ? decodeURIComponent(originalEncoded) : "";
+              const original = originalEncoded
+                ? decodeURIComponent(originalEncoded)
+                : "";
 
               if (original) {
                 finalUrl = original;
@@ -528,17 +564,18 @@ function openDashboard() {
 
 <div class="popup {loadingAuto || loadingIpqs || loadingCrt ? 'loading' : ''}">
   <!-- HEADER -->
-  <header class="header">
-    <div class="logo-dot"></div>
-    <div class="title-block">
-      <h1>CybFox – Navegación segura</h1>
-      <p class="subtitle">
-        Analizando este sitio con nuestro modelo y VirusTotal
-      </p>
-    </div>
-  </header>
+<header class="header">
+  <div class="logo-dot">
+    <img src={logoPopup} alt="CybFox logo" class="logo-img" />
+  </div>
+  <div class="title-block">
+    <h1>CybFox – Navegación segura</h1>
+   
+  </div>
+</header>
 
-  <!-- URL CARD -->
+
+  <!-- URL CARD 
   <section class="url-card">
     <div class="label">Sitio actual</div>
     <div class="url-text" title={currentUrl || "Sin URL"}>
@@ -549,7 +586,7 @@ function openDashboard() {
       {/if}
     </div>
     <button class="secondary" on:click={copyUrl}>Copiar URL</button>
-  </section>
+  </section> -->
 
   <!-- SCANNER -->
   <section class="scanner-section">
@@ -631,8 +668,8 @@ function openDashboard() {
           {#if vtBadEngines == null || vtTotalEngines == null}
             sin datos agregados
           {:else}
-            {vtBadEngines} / {vtTotalEngines} motores lo marcan como
-            malicioso o sospechoso
+            {vtBadEngines} / {vtTotalEngines} motores lo marcan como malicioso o
+            sospechoso
           {/if}
         </p>
 
@@ -657,13 +694,17 @@ function openDashboard() {
           <!-- Cuando no hay CybFox, explicamos usando VT -->
           <p class="status-text">
             {#if vtBadEngines === 0}
-              Sin detecciones en VirusTotal: ningún motor marca la URL como maliciosa o sospechosa.
+              Sin detecciones en VirusTotal: ningún motor marca la URL como
+              maliciosa o sospechosa.
             {:else if vtBadEngines === 1}
-              1 motor de seguridad marca esta URL como sospechosa. Recomendado navegar con precaución.
+              1 motor de seguridad marca esta URL como sospechosa. Recomendado
+              navegar con precaución.
             {:else if vtBadEngines <= 5}
-              Varios motores marcan esta URL como maliciosa o sospechosa. Evita introducir contraseñas o datos sensibles.
+              Varios motores marcan esta URL como maliciosa o sospechosa. Evita
+              introducir contraseñas o datos sensibles.
             {:else}
-              Muchos motores de seguridad marcan esta URL como maliciosa. Se recomienda NO continuar.
+              Muchos motores de seguridad marcan esta URL como maliciosa. Se
+              recomienda NO continuar.
             {/if}
           </p>
         {:else}
@@ -729,8 +770,8 @@ function openDashboard() {
             <p class="status-text" style="color:#fca5a5;">{ipqsError}</p>
           {:else}
             <p class="status-text">
-              Este score proviene directamente de IPQualityScore y no se usa
-              en el bloqueo automático, solo como referencia adicional.
+              Este score proviene directamente de IPQualityScore y no se usa en
+              el bloqueo automático, solo como referencia adicional.
             </p>
           {/if}
         </div>
@@ -757,12 +798,14 @@ function openDashboard() {
           <p class="status-text">{crtStatusText}</p>
           {#if crtIssuer}
             <p class="status-text">
-              <strong>Emisor:</strong> {crtIssuer}
+              <strong>Emisor:</strong>
+              {crtIssuer}
             </p>
           {/if}
           {#if crtValidTo}
             <p class="status-text">
-              <strong>Validez:</strong> {crtValidTo}
+              <strong>Validez:</strong>
+              {crtValidTo}
             </p>
           {/if}
         {/if}
@@ -780,7 +823,8 @@ function openDashboard() {
     <div class="tags-wrapper">
       {#if tags.length === 0}
         <p class="no-tags">
-          Aún no has etiquetado este sitio. Usa las etiquetas para recordarte por qué confías o desconfías de él.
+          Aún no has etiquetado este sitio. Usa las etiquetas para recordarte
+          por qué confías o desconfías de él.
         </p>
       {:else}
         <div class="tags-grid">
