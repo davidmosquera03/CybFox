@@ -1,5 +1,19 @@
 <script lang="ts">
+  import ChatWrapper from "./ChatWrapper.svelte";
+  import ChatButton from "./ChatButton.svelte";
+
   import { onMount } from "svelte";
+
+
+    let showChat = false;
+
+  const toggleChat = () => {
+    showChat = !showChat;
+  };
+
+  const closeChat = () => {
+    showChat = false;
+  };
 
   // =================== TEMA (LIGHT / DARK) =====================
   let theme: "light" | "dark" = "dark";
@@ -235,32 +249,56 @@
 
   // =================== INIT / ONMOUNT =====================
 
-  onMount(() => {
-    // Intentar leer ?url=...
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const paramUrl = params.get("url");
+onMount(async () => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const paramUrl = params.get("url");
 
-      if (paramUrl) {
-        const found = recientes.find((r) => r.url === paramUrl);
-        if (found) {
-          currentPage = found;
-        } else {
-          // Usamos datos coherentes pero con la URL que llega
-          const base = recientes[1]; // el de mayor riesgo
-          currentPage = { ...base, url: paramUrl };
-        }
-      } else {
-        // Sin query param: usamos el caso interesante por defecto
-        currentPage = recientes[1];
-      }
-    } catch {
+    if (!paramUrl) {
+      // Sin URL → usa mock
       currentPage = recientes[1];
+      return;
     }
 
-    // (Más adelante aquí puedes hacer fetch al backend con esa URL y reemplazar currentPage con datos reales)
-  });
+    // 👇 Llamada real al backend
+    const res = await fetch(`http://localhost:3001/scan?url=${encodeURIComponent(paramUrl)}`, {
+      method: "GET"
+    });
+
+    if (!res.ok) {
+      console.error("Error backend:", res.status);
+      // fallback con datos mock
+      currentPage = { ...recientes[1], url: paramUrl };
+      return;
+    }
+
+    const data = await res.json();
+
+    // 👇 Mapear tu API → al formato que tu UI necesita
+    currentPage = {
+      url: data.url,
+      riskScore: data.riskScore,
+      level: data.level,
+      tags: data.tags,
+      timeAgo: "justo ahora",
+      autoBlocked: data.autoBlocked,
+      httpsOk: data.httpsOk,
+      ipqsCategory: data.ipqsCategory,
+      cybfoxScore: data.cybfoxScore,
+      threats: data.threats,
+      history: data.history
+    };
+
+  } catch (err) {
+    console.error("Error DashboardView:", err);
+    currentPage = recientes[1];
+  }
+});
+
 </script>
+<ChatButton toggle={toggleChat} />
+
+<ChatWrapper open={showChat} close={closeChat} />
 
 <main class={`dashboard ${theme}`}>
   <!-- ================= BARRA LATERAL ================= -->
