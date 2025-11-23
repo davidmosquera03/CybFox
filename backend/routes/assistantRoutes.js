@@ -132,33 +132,6 @@ const gResponse = await fetch(
   }
 });
 
-function generateIPQSPrompt(report) {
-  const score = report?.score ?? report?.risk_score ?? "Desconocido";
-  const riskLevel = report?.riskLevel ?? report?.classification ?? "";
-  const flags = Array.isArray(report?.flags)
-    ? report.flags.join(", ")
-    : (report?.flags || "");
-  const details = report?.details || JSON.stringify(report);
-
-  return `
-Eres un asistente pedagógico de ciberseguridad llamado Cybfox que explica en lenguaje simple
-si una web es segura o peligrosa.
-
-- Score/IPQS: ${score}
-- Nivel o clasificación: ${riskLevel}
-- Flags: ${flags}
-- Detalle técnico: ${details}
-
-Ten en cuenta que entre mas bajo ${score} sea, menos segura es la web.
-Responde:
-1) Explicación clara en 2-4 líneas.
-2) Bullets con razones.
-3) Bullets con recomendaciones prácticas.
-4) Si faltan datos, dilo en una línea.
-  `.trim();
-}
-
-module.exports = router;
 
 
 
@@ -181,12 +154,20 @@ router.post("/chat", async (req, res) => {
         role: "user",
             parts: [{
                 text: `
-    Eres un asistente experto en ciberseguridad web.
-    Responde súper directo, claro y breve.
-    Siempre entrega frases completas y nunca termines una oración a medias.
-    Si te piden definiciones, explícalas en máximo 3 líneas.
-    Si te piden recomendaciones, dales bullets cortos.
-    Habla como alguien joven, relajado, sin tecnicismos innecesarios.
+Eres CybFox, un asistente experto en ciberseguridad web.
+Respondes directo, claro y sin rodeos.
+Siempre entregas respuestas completas, cortas y sin adornos inútiles.
+
+Cuando expliques conceptos complejos, usa palabras simples sin perder la esencia técnica.
+Si te piden definiciones, respóndelas en máximo 3 líneas.
+Si te piden recomendaciones, usa bullets concretos y accionables.
+Regla dura:
+  Solo respondes dudas relacionadas con ciberseguridad web(vulnerabilidades, exploits, defensas, análisis, protocolos, servidores, apps, APIs, autenticación, cifrado, hardening, etc.).
+Si te preguntan algo fuera de ese tema, recházalo de forma breve, educada y con energía.
+
+Ejemplo de rechazo:
+
+“Como tu asistente de ciberseguridad, no manejo temas fuera de esta área.Si tienes algo del mundo web o hacker, ahí sí te doy una mano.”
     `
             }]
         }
@@ -262,4 +243,34 @@ contents.push({
     });
   }
 });
+
+
+module.exports = router;
+
+function generateIPQSPrompt(report) {
+  const score = report?.score ?? report?.risk_score ?? "Desconocido";
+  const riskLevel = report?.riskLevel ?? report?.classification ?? "";
+  const flags = Array.isArray(report?.flags)
+    ? report.flags.join(", ")
+    : (report?.flags || "");
+  const details = report?.details || JSON.stringify(report);
+
+  return `
+Eres un asistente pedagógico de ciberseguridad llamado Cybfox que explica en lenguaje simple
+si una web es segura o peligrosa.
+
+- Score/IPQS: ${score}
+- Nivel o clasificación: ${riskLevel}
+- Flags: ${flags}
+- Detalle técnico: ${details}
+
+Ten en cuenta que entre mas bajo ${score} sea, menos segura es la web.
+Responde:
+1) Explicación clara en 2-4 líneas.
+2) Bullets con razones.
+3) Bullets con recomendaciones prácticas.
+4) Si faltan datos, dilo en una línea.
+  `.trim();
+}
+
 
