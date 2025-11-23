@@ -8,6 +8,7 @@
 </script>
 
 <style>
+
   .window {
     position: fixed;
     bottom: 90px;
@@ -21,6 +22,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    z-index: 999999999 !important;
+    pointer-events: auto;
   }
 
   .header {
@@ -83,7 +86,8 @@
 <div class="window">
   <div class="header">
     CybFox
-    <div class="close-btn" on:click={close}>×</div>
+    <button class="close-btn" on:click={close}>×</button>
+
   </div>
 
   <div class="messages">
@@ -104,6 +108,7 @@
       bind:value={message}
       placeholder="Escribe algo..."
       on:keydown={(e) => e.key === "Enter" && sendMessage()}
+
     />
     <button on:click={sendMessage}>Enviar</button>
   </div>

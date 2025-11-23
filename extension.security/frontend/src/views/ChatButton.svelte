@@ -26,6 +26,6 @@
   }
 </style>
 
-<div class="fab" on:click={toggle}>
+<button class="fab" on:click={toggle}>
   💬
-</div>
+</button>

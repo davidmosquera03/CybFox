@@ -1,13 +1,17 @@
 <script lang="ts">
+
   import ChatWrapper from "./ChatWrapper.svelte";
   import ChatButton from "./ChatButton.svelte";
+
 
   import { onMount } from "svelte";
   import logoDashDark from "../assets/logo-dash-oscuro.png";
   import logoDashLight from "../assets/logo-dash-claro.png";
 
+  const API_BASE = "http://localhost:3000/api";
 
-    let showChat = false;
+
+  let showChat = false;
 
   const toggleChat = () => {
     showChat = !showChat;
@@ -17,11 +21,8 @@
     showChat = false;
   };
 
-  // =================== TEMA (LIGHT / DARK) =====================
-  let theme: "light" | "dark" = "dark";
-  const API_BASE = "http://localhost:3000/api";
-
   // ====== ESTADO GLOBAL ======
+
   let theme: "dark" | "light" = "dark";
 
   $: dashboardLogo = theme === "dark" ? logoDashDark : logoDashLight;
@@ -518,11 +519,13 @@
     loading = false;
   });
 </script>
+
 <ChatButton toggle={toggleChat} />
 
 <ChatWrapper open={showChat} close={closeChat} />
 
 <div class="dashboard-root">
+
   <div class="layout">
     <!-- SIDEBAR -->
     <aside class="side-nav">
