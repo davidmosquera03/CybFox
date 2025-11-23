@@ -23,6 +23,14 @@ function daysSince(date) {
   const old = new Date(date);
   return Math.ceil((now - old) / (1000 * 60 * 60 * 24));
 }
+//Nuevo corrección de ssl en blocked
+// Normaliza el dominio para que coincida en BD, dashboard, blocked, etc.
+function normalizeDomain(host) {
+  if (!host) return "";
+  host = host.toLowerCase();
+  if (host.startsWith("www.")) host = host.slice(4);
+  return host;
+}
 
 // Permisos temporales cuando el usuario pulsa "Acceder bajo tu propio riesgo"
 const tempAllowed = new Set();
@@ -32,7 +40,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     tempAllowed.add(msg.url);
     console.log("[CybFox] Override temporal para:", msg.url);
     sendResponse?.({ ok: true });
-  }
+  } 
 });
 
 // ============= Lógica principal =============

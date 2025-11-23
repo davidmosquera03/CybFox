@@ -218,41 +218,41 @@ router.get("/get-page/:url", async (req, res) => {
   });
 });
 
-// Set (overwrite) tags for a page
-router.post("/set-tags", async (req, res) => {
-  const { url, tags } = req.body;
+// // Set (overwrite) tags for a page
+// router.post("/set-tags", async (req, res) => {
+//   const { url, tags } = req.body;
 
-  if (!url || !Array.isArray(tags)) {
-    return res.status(400).json({
-      success: false,
-      message: "url and tags array required",
-    });
-  }
+//   if (!url || !Array.isArray(tags)) {
+//     return res.status(400).json({
+//       success: false,
+//       message: "url and tags array required",
+//     });
+//   }
 
-  const domain = extractDomain(url);
-  if (!domain) {
-    return res.status(400).json({ success: false, message: "Invalid URL" });
-  }
+//   const domain = extractDomain(url);
+//   if (!domain) {
+//     return res.status(400).json({ success: false, message: "Invalid URL" });
+//   }
 
-  let page = await Page.findOne({ url: domain });
+//   let page = await Page.findOne({ url: domain });
 
-  if (!page) {
-    page = await Page.create({
-      url: domain,
-      tags,
-      reports: [],
-    });
-  } else {
-    page.tags = tags;
-    await page.save();
-  }
+//   if (!page) {
+//     page = await Page.create({
+//       url: domain,
+//       tags,
+//       reports: [],
+//     });
+//   } else {
+//     page.tags = tags;
+//     await page.save();
+//   }
 
-  res.json({
-    success: true,
-    domain,
-    tags,
-  });
-});
+//   res.json({
+//     success: true,
+//     domain,
+//     tags,
+//   });
+// });
 
 
 // WHITELIST

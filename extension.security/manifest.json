@@ -6,13 +6,21 @@
   "permissions": ["activeTab", "webNavigation", "tabs", "storage"],
   "host_permissions": ["http://localhost:3000/*"],
 
+  "icons":{
+    "2": "frontend/src/assets/2-icon.png"
+  },
+
   "action": {
-    "default_popup": "frontend/dist/index.html"
+    "default_popup": "frontend/dist/index.html",
+    "default_icon": {
+    "2": "frontend/src/assets/2-icon.png"
+    }
   },
 
   "background": {
     "service_worker": "background.js"
   },
+
 
   "web_accessible_resources": [
     {
