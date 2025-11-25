@@ -83,6 +83,31 @@
   let globalRiskTotal = 0;
   let filteredBlacklist: any[] = [];
   let filteredWhitelist: any[] = [];
+   // ====== CONTEXTO PARA CYBFOX AI (CHAT) ======
+  $: dashboardContext = {
+    currentUrl,
+    domain,
+    trafficState,
+    ipqsRiskScore,
+    cybfoxScoreSafe,
+    cybfoxRisk,
+    ipqsData,
+    vtStats: vtStatsEffective,
+    vtSummary,
+    crtInfo,
+    derivedTags,
+    totals: {
+      totalPages,
+      safePages,
+      lowRiskPages,
+      mediumRiskPages,
+      highRiskPages,
+    },
+    recentPages,
+    blacklist,
+    whitelist,
+  };
+
 
   // ====== THEME ======
   function applyTheme() {
@@ -522,7 +547,7 @@
 
 <ChatButton toggle={toggleChat} />
 
-<ChatWrapper open={showChat} close={closeChat} />
+<ChatWrapper open={showChat} close={closeChat} dashboard={dashboardContext} />
 
 <div class="dashboard-root">
 

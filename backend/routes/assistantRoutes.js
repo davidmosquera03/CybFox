@@ -1,14 +1,18 @@
 const express = require("express");
-const Page = require("../models/Page");
 const dotenv = require("dotenv");
+const Page = require("../models/Page");
+const { buildPrompt } = require("../lib/buildPrompt.js");
+
 dotenv.config();
 
 const router = express.Router();
 
+/* =======================================================
+   1. RUTA /explain-ipqs  (la mantengo intacta pero optimizada)
+======================================================= */
 router.post("/explain-ipqs", async (req, res) => {
   try {
     const { url, ipqsReport } = req.body;
-
     let report = ipqsReport;
 
     if (!report) {
@@ -19,16 +23,16 @@ router.post("/explain-ipqs", async (req, res) => {
         });
       }
 
-      const domain = (u => {
+      const domain = (() => {
         try {
-          const parsed = new URL(u);
-          return parsed.hostname;
+          return new URL(url).hostname;
         } catch {
-          return u.replace(/https?:\/\//, "").split("/")[0];
+          return url.replace(/https?:\/\//, "").split("/")[0];
         }
-      })(url);
+      })();
 
       const page = await Page.findOne({ url: domain });
+
       if (!page) {
         return res.status(404).json({
           success: false,
@@ -36,11 +40,12 @@ router.post("/explain-ipqs", async (req, res) => {
         });
       }
 
-      const ipqsEntry = (page.reports || []).find(r => r.source === "IPQS");
+      const ipqsEntry = (page.reports || []).find((r) => r.source === "IPQS");
+
       if (!ipqsEntry) {
         return res.status(404).json({
           success: false,
-          message: "No se encontró un reporte IPQS en los 'reports'.",
+          message: "No hay reporte IPQS en 'reports'.",
         });
       }
 
@@ -48,175 +53,132 @@ router.post("/explain-ipqs", async (req, res) => {
     }
 
     const prompt = generateIPQSPrompt(report);
-
-    // GEMINI
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({
-        success: false,
-        error: "Falta GEMINI_API_KEY",
-      });
-    }
 
-const gResponse = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    const gResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            contents: [{
-                parts: [{
-                    text: prompt
-                }]
-            }],
-            generationConfig: {
-                temperature: 0.2,
-                maxOutputTokens: 4072
-            },
-            safetySettings: [{
-                    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                    threshold: "BLOCK_NONE"
-                },
-                {
-                    category: "HARM_CATEGORY_HARASSMENT",
-                    threshold: "BLOCK_NONE"
-                },
-                {
-                    category: "HARM_CATEGORY_HATE_SPEECH",
-                    threshold: "BLOCK_NONE"
-                }
-            ]
-        })
-    }
-);
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 4000,
+          },
+        }),
+      }
+    );
 
     if (!gResponse.ok) {
       const txt = await gResponse.text();
-      console.error("Gemini error:", txt);
       return res.status(502).json({
         success: false,
-        error: "Error al comunicarse con Gemini",
-        details: txt
+        error: "Gemini error",
+        details: txt,
       });
     }
 
     const gData = await gResponse.json();
 
-    let explanation =
+    const explanation =
       gData?.candidates?.[0]?.content?.parts
-        ?.map(p => p.text || "")
+        ?.map((p) => p.text || "")
         .join("\n")
-        .trim()
-      || gData?.candidates?.[0]?.content?.text
-      || "";
-
-    if (!explanation) {
-      explanation =
-        "No se recibió texto de Gemini. Respuesta RAW:\n" +
-        JSON.stringify(gData, null, 2);
-    }
+        .trim() ||
+      gData?.candidates?.[0]?.content?.text ||
+      "No se recibió texto de Gemini.";
 
     return res.json({
       success: true,
       explanation,
-      raw: gData
+      raw: gData,
     });
-
   } catch (err) {
-    console.error("Error in /assistant/explain-ipqs:", err);
+    console.error("Error en /assistant/explain-ipqs:", err);
     return res.status(500).json({
       success: false,
-      error: "Error interno al generar explicación."
+      error: "Error interno.",
     });
   }
 });
 
-
-
-
+/* =======================================================
+   2. RUTA /chat (MODOS + DASHBOARD + CLASES)
+======================================================= */
 router.post("/chat", async (req, res) => {
   try {
-    const { message, history = [] } = req.body;
+    const { message, history = [], mode, dashboard } = req.body;
 
-    if (!message) {
+    if (!message)
       return res.status(400).json({
         success: false,
-        message: "Falta el campo 'message'."
+        message: "Falta 'message'",
       });
-    }
+
+    if (!mode)
+      return res.status(400).json({
+        success: false,
+        message: "Falta 'mode'",
+      });
 
     const apiKey = process.env.GEMINI_API_KEY;
 
+    // Construimos el prompt con los 4 modos + dashboard
+    const prompt = buildPrompt({
+      mode,
+      dashboard,
+      userMessage: message,
+    });
+
     const contents = [];
 
+    // Incluir historial
+    for (const msg of history) {
+      contents.push({
+        role: msg.role,
+        parts: [{ text: msg.text }],
+      });
+    }
+
+    // Mensaje actual
     contents.push({
-        role: "user",
-            parts: [{
-                text: `
-Eres CybFox, un asistente experto en ciberseguridad web.
-Respondes directo, claro y sin rodeos.
-Siempre entregas respuestas completas, cortas y sin adornos inútiles.
-
-Cuando expliques conceptos complejos, usa palabras simples sin perder la esencia técnica.
-Si te piden definiciones, respóndelas en máximo 3 líneas.
-Si te piden recomendaciones, usa bullets concretos y accionables.
-Regla dura:
-  Solo respondes dudas relacionadas con ciberseguridad web(vulnerabilidades, exploits, defensas, análisis, protocolos, servidores, apps, APIs, autenticación, cifrado, hardening, etc.).
-Si te preguntan algo fuera de ese tema, recházalo de forma breve, educada y con energía.
-
-Ejemplo de rechazo:
-
-“Como tu asistente de ciberseguridad, no manejo temas fuera de esta área.Si tienes algo del mundo web o hacker, ahí sí te doy una mano.”
-    `
-            }]
-        }
-    );
-for (const msg of history) {
-  contents.push({
-    role: msg.role,
-    parts: [{ text: msg.text }]
-  });
-}
-
-
-contents.push({
-    role: "user",
-    parts: [{
-        text: message
-    }]
-});
+      role: "user",
+      parts: [{ text: prompt }],
+    });
 
     // Llamada a Gemini
-   const gResponse = await fetch(
-       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-           method: "POST",
-           headers: {
-               "Content-Type": "application/json"
-           },
-           body: JSON.stringify({
-               contents,
-               generationConfig: {
-                   temperature: 0.3,
-                   maxOutputTokens: 4072
-               }
-           })
-       }
-   );
-
+    const gResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents,
+          generationConfig: {
+            temperature: 0.35,
+            maxOutputTokens: 4096,
+          },
+        }),
+      }
+    );
 
     if (!gResponse.ok) {
-      const t = await gResponse.text();
-      return res.status(500).json({ success: false, error: t });
+      const txt = await gResponse.text();
+      return res.status(502).json({
+        success: false,
+        error: "Gemini Error",
+        details: txt,
+      });
     }
 
     const data = await gResponse.json();
-
     const parts = data?.candidates?.[0]?.content?.parts;
+
     let reply = "";
 
     if (Array.isArray(parts)) {
-      reply = parts.map(p => p.text || "").join("\n").trim();
+      reply = parts.map((p) => p.text || "").join("\n").trim();
     }
 
     if (!reply) reply = "No pude generar respuesta.";
@@ -225,52 +187,50 @@ contents.push({
     const newHistory = [
       ...history,
       { role: "user", text: message },
-      { role: "model", text: reply }
+      { role: "model", text: reply },
     ];
 
     return res.json({
       success: true,
       reply,
       history: newHistory,
-      raw: data
+      raw: data,
     });
-
   } catch (err) {
     console.error("Error en /assistant/chat:", err);
     return res.status(500).json({
       success: false,
-      error: "Error interno."
+      error: "Error interno.",
     });
   }
 });
 
-
-module.exports = router;
-
+/* =======================================================
+   3. Helper para IPQS (igual)
+======================================================= */
 function generateIPQSPrompt(report) {
-  const score = report?.score ?? report?.risk_score ?? "Desconocido";
-  const riskLevel = report?.riskLevel ?? report?.classification ?? "";
+  const score = report?.score ?? report?.risk_score ?? "N/A";
+  const risk = report?.riskLevel ?? report?.classification ?? "";
   const flags = Array.isArray(report?.flags)
     ? report.flags.join(", ")
-    : (report?.flags || "");
-  const details = report?.details || JSON.stringify(report);
+    : report?.flags || "";
+  const detail = report?.details || JSON.stringify(report);
 
   return `
-Eres un asistente pedagógico de ciberseguridad llamado Cybfox que explica en lenguaje simple
-si una web es segura o peligrosa.
+Eres CybFox, un asistente pedagógico de ciberseguridad.
 
-- Score/IPQS: ${score}
-- Nivel o clasificación: ${riskLevel}
-- Flags: ${flags}
-- Detalle técnico: ${details}
+IPQS Score: ${score}
+Nivel: ${risk}
+Flags: ${flags}
 
-Ten en cuenta que entre mas bajo ${score} sea, menos segura es la web.
-Responde:
-1) Explicación clara en 2-4 líneas.
-2) Bullets con razones.
-3) Bullets con recomendaciones prácticas.
-4) Si faltan datos, dilo en una línea.
-  `.trim();
+Detalle:
+${detail}
+
+Explica:
+1. Resumen claro (3 líneas)
+2. Razones en bullets
+3. Recomendaciones prácticas
+  `;
 }
 
-
+module.exports = router;
