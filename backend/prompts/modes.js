@@ -24,8 +24,8 @@ Invita al usuario a preguntar con ejemplos como:
 - "¿Qué me recomiendas hacer con este sitio?"
 
 Formato sugerido:
-- Empieza con: "🔍 Lo básico:" (2–3 frases).
-- Luego "⚠️ Lo que debes saber:" (2–4 bullets muy simples).
+- Empieza con: "🔍 Lo básico:" (1-2 frases).
+- Luego "⚠️ Lo que debes saber:" (2–3 bullets muy simples).
 - Cierra con "✅ Recomendación rápida:" (1 frase clara).
 
 NO uses jerga técnica ni nombres de protocolos.
@@ -101,7 +101,7 @@ Formato sugerido:
 - "👀 Pistas que debes mirar siempre"
 - "✅ Buenas prácticas"
 
-Evita párrafos demasiado largos. Máximo 3–4 frases por bloque.
+Evita párrafos demasiado largos. Máximo 1-2 frases por bloque.
 `;
 
 // MODO PROFESOR
@@ -135,7 +135,8 @@ Estructura de cada clase:
 2️⃣ Explicación + ejemplo real o simulado, usando el dashboard si ayuda.
 3️⃣ Mini-pregunta + cierre (una sola pregunta sencilla y corrección breve).
 
-Mantén la salida bien organizada con encabezados:
+Mantén la salida bien organizada con encabezados, pero quiero que lo hagas secuencialmente, no le lances todo el contenido
+directamente al usuario sino que ve paso a paso, y al final le dices al usuario que te diga si quiere continuar con la lección:
 - "🎓 Clase X — Título"
 - "1) Introducción"
 - "2) Ejemplo"

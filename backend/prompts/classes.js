@@ -56,12 +56,12 @@ tarjetas y datos personales.
   - Por qué un formulario puede ser sospechoso (URL rara, página nueva,
     mala reputación, etc.).
   - Qué tipo de datos nunca deberías poner en un sitio dudoso.
-- Da 2–3 reglas simples para reconocer formularios peligrosos.
+- Da 2-3 reglas simples para reconocer formularios peligrosos.
 
 3) Pregunta rápida
 Pregunta algo como:
 "¿Qué revisarías antes de escribir tu tarjeta de crédito en un formulario?"
-Luego refuerza 2–3 puntos clave que el usuario debería recordar.
+Luego refuerza 2-3 puntos clave que el usuario debería recordar.
 `;
 
 const class4 = `
@@ -133,7 +133,7 @@ Modo Profesor — Pregunta rápida
 
 Haz UNA sola pregunta sencilla sobre detección de phishing o seguridad web
 relacionada con la página actual. Espera la respuesta del usuario y,
-cuando la dé, respóndele con una corrección corta (2–3 frases) y un consejo.
+cuando la dé, respóndele con una corrección corta (1-2 frases) y un consejo.
 `;
 
 module.exports.professorClasses = {

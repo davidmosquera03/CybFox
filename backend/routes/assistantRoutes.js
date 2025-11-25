@@ -129,6 +129,7 @@ router.post("/chat", async (req, res) => {
       mode,
       dashboard,
       userMessage: message,
+      historyLength: history.length,
     });
 
     const contents = [];
@@ -227,9 +228,9 @@ Detalle:
 ${detail}
 
 Explica:
-1. Resumen claro (3 líneas)
+1. Resumen claro (2 líneas)
 2. Razones en bullets
-3. Recomendaciones prácticas
+3. Recomendaciones prácticas 
   `;
 }
 

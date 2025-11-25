@@ -31,8 +31,22 @@ Si se hacen alteraciones a rutas:
 node swagger.js && node server.js
 ```
 
+### Frontend
+
+```
+cd extension.security
+cd frontend
+npm i
+npm run build
+```
+
 ### Extension
 
-En Chrome ir a "chrome://extensions/"
+En Chrome ir a "chrome://extensions/", activar modo desarrollador
 
 Hacer clic en "load unpacked"
+
+seleccionar extension.security
+
+
+npm install marked
