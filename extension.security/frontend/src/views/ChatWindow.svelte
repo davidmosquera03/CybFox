@@ -336,27 +336,5 @@
   }
 
 
-  /* NORMALIZACIÓN DE MARKDOWN PARA BURBUJAS */
-.bubble-inner p {
-  margin: 0;               /* Quita el margen superior/inferior */
-}
-
-.bubble-inner ul,
-.bubble-inner ol {
-  margin: 4px 0;           /* Reduce el espacio entre listas */
-  padding-left: 18px;      /* Ajusta sangría */
-}
-
-.bubble-inner li {
-  margin: 2px 0;           /* Evita viñetas muy espaciadas */
-}
-
-.bubble-inner > *:first-child {
-  margin-top: 0;
-}
-
-.bubble-inner > *:last-child {
-  margin-bottom: 0;
-}
 
 </style>

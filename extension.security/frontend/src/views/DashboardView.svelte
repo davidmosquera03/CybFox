@@ -2,6 +2,8 @@
 
   import ChatWrapper from "./ChatWrapper.svelte";
   import ChatButton from "./ChatButton.svelte";
+  import SecurityTipCard from "./SecurityTipCard.svelte";
+  import TeamCarousel from "./TeamCarousel.svelte";
 
 
   import { onMount } from "svelte";
@@ -569,31 +571,10 @@
           <span class="nav-dot"></span>
           <span>Resumen</span>
         </button>
-        <!-- <button class="nav-item">
-          <span class="nav-dot"></span>
-          <span>Análisis profundo</span>
-        </button>
-        <button class="nav-item">
-          <span class="nav-dot"></span>
-          <span>Análisis rápido</span>
-        </button> -->
-<!-- 
-        <div class="nav-group-title">LISTAS</div>
-        <button class="nav-item">
-          <span class="nav-dot"></span>
-          <span>Lista de bloqueados</span>
-        </button>
-        <button class="nav-item">
-          <span class="nav-dot"></span>
-          <span>Lista blanca</span>
-        </button>
-
-        <div class="nav-group-title">SISTEMA</div>
-        <button class="nav-item">
-          <span class="nav-dot"></span>
-          <span>Configuración</span>
-        </button> -->
+        
       </nav>
+      <SecurityTipCard />
+      <TeamCarousel {theme} />
     </aside>
 
     <!-- MAIN -->
