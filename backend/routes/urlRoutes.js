@@ -84,7 +84,10 @@ async function calculateScore(domainName) {
 
   // IPQS
   const ipqs = page.reports.find((r) => r.source === "IPQS");
-  if (ipqs?.data?.score !== undefined) score -= ipqs.data.score;
+
+  if (ipqs?.data?.risk_score !== undefined) {
+    score -= ipqs.data.risk_score;
+  }
 
   if (score < 0) score = 0;
 
