@@ -431,18 +431,12 @@
 
   // Semáforo (prioriza IPQS; si no hay, usa CybFox)
   $: {
-    const ipqsScore = typeof ipqsRiskScore === "number" ? ipqsRiskScore : null;
-
-    if (ipqsScore !== null) {
-      if (ipqsScore >= 80) trafficState = "high";
-      else if (ipqsScore >= 50) trafficState = "medium";
-      else trafficState = "low";
-    } else if (cybfoxRisk !== null) {
-      if (cybfoxRisk >= 80) trafficState = "high";
-      else if (cybfoxRisk >= 50) trafficState = "medium";
-      else trafficState = "low";
+    if (cybfoxRisk !== null) {
+      if (cybfoxRisk >= 70) trafficState = "high";      // Riesgo alto: rojo
+      else if (cybfoxRisk >= 40) trafficState = "medium"; // Riesgo medio: amarillo
+      else trafficState = "low";                          // Riesgo bajo: verde
     } else {
-      trafficState = "medium";
+      trafficState = "medium"; // Por defecto si no hay datos
     }
   }
 
@@ -717,12 +711,12 @@
                   </div>
                   <div class="score-value-row">
                     <span class="score-value"
-                      >{formatScore(cybfoxScoreSafe)}</span
+                      >{formatScore(cybfoxRisk)}</span
                     >
                     <span class="score-unit">/100</span>
                   </div>
                   <p class="muted">
-                    Score interno (0 = peor, 100 = más confiable)
+                    Score interno (0 = seguro, 100 = más riesgoso)
                   </p>
 
                   {#if pageInfo}
